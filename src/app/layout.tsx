@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground">
         <BibliotecaProvider>
           <BarraLateral />
-          <main className="ml-64 min-h-screen p-8">{children}</main>
+          <main className="flex-1 w-full md:w-auto md:ml-64 min-h-screen p-4 md:p-8">{children}</main>
         </BibliotecaProvider>
       </body>
     </html>

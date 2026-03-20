@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LifeBuoy, Plus } from "lucide-react";
+import { LifeBuoy, Plus, Search, Filter } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,18 +24,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { Ticket } from "@/lib/dados-mockados";
 
 export default function PaginaTickets() {
   const { tickets, criarTicket } = useBiblioteca();
+
+  // Estados dos Filtros
+  const [busca, setBusca] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("TODAS");
+  const [filtroPrioridade, setFiltroPrioridade] = useState<string>("TODAS");
 
   // Estados do Modal
   const [modalCriar, setModalCriar] = useState(false);
@@ -47,16 +44,16 @@ export default function PaginaTickets() {
 
   // Status Badges Config
   const statusConfig = {
-    ABERTO: { label: "Aberto", className: "bg-yellow-500/15 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/25" },
-    EM_ANALISE: { label: "Em Análise", className: "bg-blue-500/15 text-blue-500 border-blue-500/20 hover:bg-blue-500/25" },
-    CONCLUIDO: { label: "Concluído", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25" },
+    ABERTO: { label: "Aberto", borderColor: "border-t-yellow-500" },
+    EM_ANALISE: { label: "Em Análise", borderColor: "border-t-blue-500" },
+    CONCLUIDO: { label: "Concluído", borderColor: "border-t-emerald-500" },
   };
 
   // Priority Badges Config
   const prioridadeConfig = {
-    BAIXA: { label: "Baixa", className: "bg-slate-500/15 text-slate-400 border-slate-500/20 hover:bg-slate-500/25" },
-    MEDIA: { label: "Média", className: "bg-orange-500/15 text-orange-400 border-orange-500/20 hover:bg-orange-500/25" },
-    ALTA: { label: "Alta", className: "bg-red-500/15 text-red-500 border-red-500/20 hover:bg-red-500/25" },
+    BAIXA: { label: "Baixa", className: "bg-slate-500/15 text-slate-400 border-slate-500/20" },
+    MEDIA: { label: "Média", className: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
+    ALTA: { label: "Alta", className: "bg-red-500/15 text-red-500 border-red-500/20" },
   };
 
   async function handleSubmit() {
@@ -79,7 +76,7 @@ export default function PaginaTickets() {
     setModalCriar(false);
   }
 
-  // Formatador de Data (Ex: 2026-03-20T... -> 20/03/2026)
+  // Formatador de Data
   function formatarData(dataIso: string) {
     if (!dataIso) return "N/A";
     const data = new Date(dataIso);
@@ -89,6 +86,41 @@ export default function PaginaTickets() {
       year: "numeric",
     });
   }
+
+  // Lógica de Filtragem e Divisão por Status
+  const ticketsFiltrados = tickets.filter(t => {
+    const matchBusca = t.titulo.toLowerCase().includes(busca.toLowerCase()) || (t.id?.toString() || "").includes(busca);
+    const matchCategoria = filtroCategoria === "TODAS" || t.categoria === filtroCategoria;
+    const matchPrioridade = filtroPrioridade === "TODAS" || t.prioridade === filtroPrioridade;
+    return matchBusca && matchCategoria && matchPrioridade;
+  });
+
+  const abertos = [...ticketsFiltrados].filter((t) => t.status === "ABERTO").reverse();
+  const emAnalise = [...ticketsFiltrados].filter((t) => t.status === "EM_ANALISE").reverse();
+  const concluidos = [...ticketsFiltrados].filter((t) => t.status === "CONCLUIDO").reverse();
+
+  // Componente de Ticket Compacto
+  const RenderizarTicket = ({ ticket }: { ticket: Ticket }) => (
+    <div key={ticket.id} className="p-3 bg-muted/30 border border-border/60 rounded-lg shadow-sm flex flex-col gap-3 hover:bg-muted/50 hover:border-border transition-all">
+      <div className="flex justify-between items-start gap-2">
+        <h3 className="text-sm font-medium leading-tight">{ticket.titulo}</h3>
+        <span className="text-xs font-mono text-muted-foreground font-semibold bg-background px-1.5 py-0.5 rounded-md border border-border shrink-0">
+          #{ticket.id?.toString().padStart(3, "0") || "000"}
+        </span>
+      </div>
+      <div className="flex items-center justify-between mt-auto">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 border ${prioridadeConfig[ticket.prioridade]?.className || ""}`}>
+            {prioridadeConfig[ticket.prioridade]?.label || ticket.prioridade}
+          </Badge>
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+            {ticket.categoria === "BUG" ? "Bug" : ticket.categoria === "SUGESTAO" ? "Sugestão" : "Dúvida"}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground font-medium">{formatarData(ticket.dataCriacao)}</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -105,9 +137,56 @@ export default function PaginaTickets() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Barra de Filtros e Ações */}
+      <div className="flex flex-col sm:flex-row gap-4 items-end justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-end">
+          <div className="grid gap-1.5 flex-1 sm:w-[250px]">
+            <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Search className="h-3 w-3" /> Buscar Ticket
+            </Label>
+            <Input
+              placeholder="Título ou ID..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="h-9"
+            />
+          </div>
+          <div className="grid gap-1.5 w-full sm:w-[150px]">
+             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+               <Filter className="h-3 w-3" /> Categoria
+             </Label>
+             <Select value={filtroCategoria} onValueChange={(value) => setFiltroCategoria(value || "TODAS")}>
+               <SelectTrigger className="h-9">
+                 <SelectValue placeholder="Todas" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="TODAS">Todas</SelectItem>
+                 <SelectItem value="BUG">Bug / Erro</SelectItem>
+                 <SelectItem value="SUGESTAO">Sugestão</SelectItem>
+                 <SelectItem value="DUVIDA">Dúvida</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
+          <div className="grid gap-1.5 w-full sm:w-[150px]">
+             <Label className="text-xs text-muted-foreground">Prioridade</Label>
+             <Select value={filtroPrioridade} onValueChange={(value) => setFiltroPrioridade(value || "TODAS")}>
+               <SelectTrigger className="h-9">
+                 <SelectValue placeholder="Todas" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="TODAS">Todas</SelectItem>
+                 <SelectItem value="BAIXA">Baixa</SelectItem>
+                 <SelectItem value="MEDIA">Média</SelectItem>
+                 <SelectItem value="ALTA">Alta</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
+        </div>
 
         <Dialog open={modalCriar} onOpenChange={setModalCriar}>
-          <DialogTrigger render={<Button className="gap-2 w-full sm:w-auto" />}>
+          <DialogTrigger render={<Button className="gap-2 w-full sm:w-auto h-9" />}>
             <Plus className="h-4 w-4" />
             Novo Chamado
           </DialogTrigger>
@@ -182,77 +261,64 @@ export default function PaginaTickets() {
         </Dialog>
       </div>
 
-      {/* Resumo rápido */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-muted/20 px-4 py-2">
-          <span className="text-sm text-muted-foreground">Total de Tickets: </span>
-          <span className="font-semibold">{tickets.length}</span>
-        </div>
-        <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-4 py-2">
-          <span className="text-sm text-muted-foreground">Em Aberto: </span>
-          <span className="font-semibold text-yellow-500">
-            {tickets.filter((t) => t.status === "ABERTO").length}
-          </span>
-        </div>
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2">
-          <span className="text-sm text-muted-foreground">Concluídos: </span>
-          <span className="font-semibold text-emerald-400">
-            {tickets.filter((t) => t.status === "CONCLUIDO").length}
-          </span>
-        </div>
-      </div>
-
-      {/* Tabela de Tickets */}
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <Table className="min-w-[600px]">
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="w-16 text-center font-semibold">ID</TableHead>
-              <TableHead className="font-semibold">Título</TableHead>
-              <TableHead className="w-32 text-center font-semibold">Categoria</TableHead>
-              <TableHead className="w-28 text-center font-semibold">Prioridade</TableHead>
-              <TableHead className="w-32 text-center font-semibold">Status</TableHead>
-              <TableHead className="w-32 text-right font-semibold">Data</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tickets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                  Nenhum chamado registrado.
-                </TableCell>
-              </TableRow>
+      {/* Grid Kanban */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        {/* Coluna Aberto */}
+        <div className="flex flex-col rounded-xl bg-card border border-border shadow-sm overflow-hidden">
+          <div className={`p-4 border-b border-border bg-muted/20 border-t-2 ${statusConfig.ABERTO.borderColor}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Aberto</h2>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-bold">
+                {abertos.length}
+              </span>
+            </div>
+          </div>
+          <div className="p-3 flex flex-col gap-3 min-h-[50vh] bg-muted/10">
+            {abertos.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-6">Nenhum chamado aberto</p>
             ) : (
-              [...tickets].reverse().map((ticket) => (
-                <TableRow key={ticket.id} className="border-border transition-colors hover:bg-muted/30">
-                  <TableCell className="text-center font-mono text-muted-foreground">
-                    #{ticket.id?.toString().padStart(3, "0") || "000"}
-                  </TableCell>
-                  <TableCell className="font-medium max-w-[200px] truncate" title={ticket.titulo}>
-                    {ticket.titulo}
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground text-sm">
-                    {ticket.categoria === "BUG" ? "Bug / Erro" : 
-                     ticket.categoria === "SUGESTAO" ? "Sugestão" : "Dúvida"}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className={prioridadeConfig[ticket.prioridade]?.className || ""}>
-                      {prioridadeConfig[ticket.prioridade]?.label || ticket.prioridade}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className={statusConfig[ticket.status]?.className || ""}>
-                      {statusConfig[ticket.status]?.label || ticket.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground text-sm whitespace-nowrap">
-                    {formatarData(ticket.dataCriacao)}
-                  </TableCell>
-                </TableRow>
-              ))
+              abertos.map((ticket) => <RenderizarTicket key={ticket.id} ticket={ticket} />)
             )}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
+
+        {/* Coluna Em Análise */}
+        <div className="flex flex-col rounded-xl bg-card border border-border shadow-sm overflow-hidden">
+          <div className={`p-4 border-b border-border bg-muted/20 border-t-2 ${statusConfig.EM_ANALISE.borderColor}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Em Análise</h2>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/10 text-blue-500 text-xs font-bold">
+                {emAnalise.length}
+              </span>
+            </div>
+          </div>
+          <div className="p-3 flex flex-col gap-3 min-h-[50vh] bg-muted/10">
+            {emAnalise.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-6">Nenhum chamado em análise</p>
+            ) : (
+              emAnalise.map((ticket) => <RenderizarTicket key={ticket.id} ticket={ticket} />)
+            )}
+          </div>
+        </div>
+
+        {/* Coluna Concluído */}
+        <div className="flex flex-col rounded-xl bg-card border border-border shadow-sm overflow-hidden">
+          <div className={`p-4 border-b border-border bg-muted/20 border-t-2 ${statusConfig.CONCLUIDO.borderColor}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm">Concluído</h2>
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold">
+                {concluidos.length}
+              </span>
+            </div>
+          </div>
+          <div className="p-3 flex flex-col gap-3 min-h-[50vh] bg-muted/10">
+            {concluidos.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-6">Nenhum chamado concluído</p>
+            ) : (
+              concluidos.map((ticket) => <RenderizarTicket key={ticket.id} ticket={ticket} />)
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
