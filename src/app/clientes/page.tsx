@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import type { Cliente } from "@/lib/dados-mockados";
 
-const API_URL = "projetogestaobibliotecabackend-production.up.railway.app/api/clientes";
+const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/clientes";
 
 export default function PaginaClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
