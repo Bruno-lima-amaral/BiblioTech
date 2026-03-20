@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BookOpen, Search, Plus, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import type { Livro } from "@/lib/dados-mockados";
 
-const API_URL = "http://localhost:8080/api/livros";
-
 export default function PaginaAcervo() {
-  const [livros, setLivros] = useState<Livro[]>([]);
+  const { livros, adicionarLivro, editarLivro, deletarLivro } =
+    useBiblioteca();
   const [busca, setBusca] = useState("");
 
   // Modal de Criar
@@ -44,20 +44,6 @@ export default function PaginaAcervo() {
   const [editAutor, setEditAutor] = useState("");
   const [editAno, setEditAno] = useState("");
 
-  // ─── GET — Carregar livros ao montar ─────────────────────────────
-  useEffect(() => {
-    async function carregarLivros() {
-      try {
-        const res = await fetch(API_URL);
-        const dados: Livro[] = await res.json();
-        setLivros(dados);
-      } catch (erro) {
-        console.error("Erro ao carregar livros:", erro);
-      }
-    }
-    carregarLivros();
-  }, []);
-
   const livrosFiltrados = livros.filter((livro) => {
     const termo = busca.toLowerCase();
     return (
@@ -66,46 +52,19 @@ export default function PaginaAcervo() {
     );
   });
 
-  // ─── POST — Cadastrar novo livro ─────────────────────────────────
-  async function salvarLivro() {
+  function salvarLivro() {
     if (!novoTitulo.trim() || !novoAutor.trim() || !novoAno.trim()) return;
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titulo: novoTitulo.trim(),
-          autor: novoAutor.trim(),
-          ano: parseInt(novoAno),
-          disponivel: true,
-        }),
-      });
-      if (res.ok) {
-        const livroCriado: Livro = await res.json();
-        setLivros((prev) => [...prev, livroCriado]);
-        setNovoTitulo("");
-        setNovoAutor("");
-        setNovoAno("");
-        setModalCriar(false);
-      }
-    } catch (erro) {
-      console.error("Erro ao cadastrar livro:", erro);
-    }
+    adicionarLivro({
+      titulo: novoTitulo.trim(),
+      autor: novoAutor.trim(),
+      ano: parseInt(novoAno),
+    });
+    setNovoTitulo("");
+    setNovoAutor("");
+    setNovoAno("");
+    setModalCriar(false);
   }
 
-  // ─── DELETE — Remover livro ──────────────────────────────────────
-  async function deletarLivro(id: number) {
-    try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setLivros((prev) => prev.filter((l) => l.id !== id));
-      }
-    } catch (erro) {
-      console.error("Erro ao deletar livro:", erro);
-    }
-  }
-
-  // ─── PUT — Editar livro ──────────────────────────────────────────
   function abrirEdicao(livro: Livro) {
     setLivroEditando(livro);
     setEditTitulo(livro.titulo);
@@ -114,30 +73,15 @@ export default function PaginaAcervo() {
     setModalEditar(true);
   }
 
-  async function salvarEdicao() {
+  function salvarEdicao() {
     if (!livroEditando || !editTitulo.trim() || !editAutor.trim() || !editAno.trim()) return;
-    try {
-      const res = await fetch(`${API_URL}/${livroEditando.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titulo: editTitulo.trim(),
-          autor: editAutor.trim(),
-          ano: parseInt(editAno),
-          disponivel: livroEditando.disponivel,
-        }),
-      });
-      if (res.ok) {
-        const livroAtualizado: Livro = await res.json();
-        setLivros((prev) =>
-          prev.map((l) => (l.id === livroAtualizado.id ? livroAtualizado : l))
-        );
-        setModalEditar(false);
-        setLivroEditando(null);
-      }
-    } catch (erro) {
-      console.error("Erro ao editar livro:", erro);
-    }
+    editarLivro(livroEditando.id, {
+      titulo: editTitulo.trim(),
+      autor: editAutor.trim(),
+      ano: parseInt(editAno),
+    });
+    setModalEditar(false);
+    setLivroEditando(null);
   }
 
   return (
