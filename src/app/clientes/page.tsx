@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Mail, Search, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import type { Cliente } from "@/lib/dados-mockados";
 
+const API_URL = "projetogestaobibliotecabackend-production.up.railway.app/api/clientes";
+
 export default function PaginaClientes() {
-  const { clientes, adicionarCliente, editarCliente, deletarCliente } =
-    useBiblioteca();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [busca, setBusca] = useState("");
 
   // Modal de Criar
@@ -41,6 +41,20 @@ export default function PaginaClientes() {
   const [editNome, setEditNome] = useState("");
   const [editEmail, setEditEmail] = useState("");
 
+  // ─── GET — Carregar clientes ao montar ───────────────────────────
+  useEffect(() => {
+    async function carregarClientes() {
+      try {
+        const res = await fetch(API_URL);
+        const dados: Cliente[] = await res.json();
+        setClientes(dados);
+      } catch (erro) {
+        console.error("Erro ao carregar clientes:", erro);
+      }
+    }
+    carregarClientes();
+  }, []);
+
   const clientesFiltrados = clientes.filter((cliente) => {
     const termo = busca.toLowerCase();
     return (
@@ -49,17 +63,43 @@ export default function PaginaClientes() {
     );
   });
 
-  function salvarCliente() {
+  // ─── POST — Cadastrar novo cliente ───────────────────────────────
+  async function salvarCliente() {
     if (!novoNome.trim() || !novoEmail.trim()) return;
-    adicionarCliente({
-      nome: novoNome.trim(),
-      email: novoEmail.trim(),
-    });
-    setNovoNome("");
-    setNovoEmail("");
-    setModalCriar(false);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: novoNome.trim(),
+          email: novoEmail.trim(),
+        }),
+      });
+      if (res.ok) {
+        const clienteCriado: Cliente = await res.json();
+        setClientes((prev) => [...prev, clienteCriado]);
+        setNovoNome("");
+        setNovoEmail("");
+        setModalCriar(false);
+      }
+    } catch (erro) {
+      console.error("Erro ao cadastrar cliente:", erro);
+    }
   }
 
+  // ─── DELETE — Remover cliente ────────────────────────────────────
+  async function deletarCliente(id: number) {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setClientes((prev) => prev.filter((c) => c.id !== id));
+      }
+    } catch (erro) {
+      console.error("Erro ao deletar cliente:", erro);
+    }
+  }
+
+  // ─── PUT — Editar cliente ────────────────────────────────────────
   function abrirEdicao(cliente: Cliente) {
     setClienteEditando(cliente);
     setEditNome(cliente.nome);
@@ -67,14 +107,28 @@ export default function PaginaClientes() {
     setModalEditar(true);
   }
 
-  function salvarEdicao() {
+  async function salvarEdicao() {
     if (!clienteEditando || !editNome.trim() || !editEmail.trim()) return;
-    editarCliente(clienteEditando.id, {
-      nome: editNome.trim(),
-      email: editEmail.trim(),
-    });
-    setModalEditar(false);
-    setClienteEditando(null);
+    try {
+      const res = await fetch(`${API_URL}/${clienteEditando.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: editNome.trim(),
+          email: editEmail.trim(),
+        }),
+      });
+      if (res.ok) {
+        const clienteAtualizado: Cliente = await res.json();
+        setClientes((prev) =>
+          prev.map((c) => (c.id === clienteAtualizado.id ? clienteAtualizado : c))
+        );
+        setModalEditar(false);
+        setClienteEditando(null);
+      }
+    } catch (erro) {
+      console.error("Erro ao editar cliente:", erro);
+    }
   }
 
   return (
