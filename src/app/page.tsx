@@ -94,7 +94,7 @@ export default function PaginaInicial() {
             emprestimos.map((emprestimo) => (
               <div
                 key={emprestimo.id}
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 px-4 py-3 transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -107,7 +107,7 @@ export default function PaginaInicial() {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-sm text-muted-foreground">
                     {new Date(emprestimo.dataEmprestimo).toLocaleDateString(
                       "pt-BR"

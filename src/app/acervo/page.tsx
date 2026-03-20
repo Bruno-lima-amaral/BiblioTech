@@ -27,6 +27,7 @@ import type { Livro } from "@/lib/dados-mockados";
 
 const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/livros";
 
+
 export default function PaginaAcervo() {
   const [livros, setLivros] = useState<Livro[]>([]);
   const [busca, setBusca] = useState("");
@@ -143,7 +144,7 @@ export default function PaginaAcervo() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <BookOpen className="h-5 w-5" />
@@ -158,16 +159,16 @@ export default function PaginaAcervo() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Busca */}
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar livro..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="h-10 w-64 rounded-lg border border-border bg-muted/30 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-10 w-full sm:w-64 rounded-lg border border-border bg-muted/30 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -175,7 +176,7 @@ export default function PaginaAcervo() {
           <Dialog open={modalCriar} onOpenChange={setModalCriar}>
             <DialogTrigger
               render={
-                <Button className="gap-2">
+                <Button className="gap-2 w-full sm:w-auto">
                   <Plus className="h-4 w-4" />
                   Novo Livro
                 </Button>
@@ -214,7 +215,7 @@ export default function PaginaAcervo() {
       </div>
 
       {/* Resumo rápido */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-lg border border-border bg-muted/20 px-4 py-2">
           <span className="text-sm text-muted-foreground">Total: </span>
           <span className="font-semibold">{livros.length} livros</span>
@@ -234,7 +235,7 @@ export default function PaginaAcervo() {
       </div>
 
       {/* Tabela de Livros */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">

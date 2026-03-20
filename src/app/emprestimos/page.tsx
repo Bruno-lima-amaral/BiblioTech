@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
+
 const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/emprestimos";
 
 export default function PaginaEmprestimos() {
@@ -48,7 +49,7 @@ export default function PaginaEmprestimos() {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ClipboardList className="h-5 w-5" />
@@ -65,7 +66,7 @@ export default function PaginaEmprestimos() {
         <Dialog open={modalAberto} onOpenChange={setModalAberto}>
           <DialogTrigger
             render={
-              <Button className="gap-2">
+              <Button className="gap-2 w-full sm:w-auto">
                 <Plus className="h-4 w-4" />
                 Novo Empréstimo
               </Button>
@@ -152,7 +153,7 @@ export default function PaginaEmprestimos() {
       </div>
 
       {/* Resumo */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-lg border border-border bg-muted/20 px-4 py-2">
           <span className="text-sm text-muted-foreground">Total: </span>
           <span className="font-semibold">
@@ -176,7 +177,7 @@ export default function PaginaEmprestimos() {
       </div>
 
       {/* Tabela de Empréstimos */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
