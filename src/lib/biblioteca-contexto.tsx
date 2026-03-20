@@ -7,7 +7,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import type { Livro, Cliente, Emprestimo } from "@/lib/dados-mockados";
+import type { Livro, Cliente, Emprestimo, Ticket } from "@/lib/dados-mockados";
 
 const API_BASE = "https://projetogestaobibliotecabackend-production.up.railway.app/api";
 
@@ -17,6 +17,7 @@ interface BibliotecaContexto {
   livros: Livro[];
   clientes: Cliente[];
   emprestimos: Emprestimo[];
+  tickets: Ticket[];
   adicionarLivro: (livro: Omit<Livro, "id" | "disponivel">) => void;
   editarLivro: (id: number, dados: Omit<Livro, "id" | "disponivel">) => void;
   deletarLivro: (id: number) => void;
@@ -25,6 +26,8 @@ interface BibliotecaContexto {
   deletarCliente: (id: number) => void;
   criarEmprestimo: (livroId: number, clienteId: number) => void;
   devolverEmprestimo: (emprestimoId: number) => void;
+  carregarTickets: () => Promise<void>;
+  criarTicket: (dados: Omit<Ticket, "id" | "status" | "dataCriacao">) => Promise<void>;
 }
 
 const Contexto = createContext<BibliotecaContexto | null>(null);
@@ -47,6 +50,7 @@ export function BibliotecaProvider({
   const [livros, setLivros] = useState<Livro[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   // ─── Carregamento inicial via API ───────────────────────────────
 
@@ -73,6 +77,40 @@ export function BibliotecaProvider({
     }
     carregarDados();
   }, []);
+
+  // ─── Tickets ───────────────────────────────────────────────────
+
+  const carregarTickets = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/tickets`);
+      if (res.ok) setTickets(await res.json());
+    } catch (erro) {
+      console.error("Erro ao carregar tickets:", erro);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarTickets();
+  }, [carregarTickets]);
+
+  const criarTicket = useCallback(
+    async (dados: Omit<Ticket, "id" | "status" | "dataCriacao">) => {
+      try {
+        const res = await fetch(`${API_BASE}/tickets`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dados),
+        });
+        if (res.ok) {
+          const novoTicket: Ticket = await res.json();
+          setTickets((prev) => [...prev, novoTicket]);
+        }
+      } catch (erro) {
+        console.error("Erro ao criar ticket:", erro);
+      }
+    },
+    []
+  );
 
   // ─── Livros ────────────────────────────────────────────────────
 
@@ -266,6 +304,9 @@ export function BibliotecaProvider({
         deletarCliente,
         criarEmprestimo,
         devolverEmprestimo,
+        tickets,
+        carregarTickets,
+        criarTicket,
       }}
     >
       {children}

@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   Library,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ const itensNavegacao = [
   { titulo: "Acervo", href: "/acervo", icone: BookOpen },
   { titulo: "Clientes", href: "/clientes", icone: Users },
   { titulo: "Empréstimos", href: "/emprestimos", icone: ClipboardList },
+  { titulo: "Suporte", href: "/tickets", icone: LifeBuoy },
 ];
 
 export function BarraLateral() {

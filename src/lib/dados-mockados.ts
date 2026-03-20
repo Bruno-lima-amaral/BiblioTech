@@ -22,6 +22,16 @@ export interface Emprestimo {
   cliente: Cliente;
 }
 
+export interface Ticket {
+  id: number;
+  titulo: string;
+  categoria: "BUG" | "SUGESTAO" | "DUVIDA";
+  prioridade: "BAIXA" | "MEDIA" | "ALTA";
+  status: "ABERTO" | "EM_ANALISE" | "CONCLUIDO";
+  descricao: string;
+  dataCriacao: string;
+}
+
 // ─── Dados Mockados ─────────────────────────────────────────────────
 
 export const livrosMockados: Livro[] = [
