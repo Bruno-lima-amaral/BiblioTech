@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import type { Livro, Cliente, Emprestimo } from "@/lib/dados-mockados";
 
-const API_BASE = "projetogestaobibliotecabackend-production.up.railway.app/api";
+const API_BASE = "https://projetogestaobibliotecabackend-production.up.railway.app/api";
 
 // ─── Tipo do Contexto ──────────────────────────────────────────────
 

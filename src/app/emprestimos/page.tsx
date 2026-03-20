@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
-const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/clientes";
+const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/emprestimos";
 
 export default function PaginaEmprestimos() {
   const { livros, clientes, emprestimos, criarEmprestimo, devolverEmprestimo } =
