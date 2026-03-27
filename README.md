@@ -1,6 +1,6 @@
-# 📚 Sistema de Gestão de Biblioteca - Full Stack
+# 📚 Sistema de Gestão de Biblioteca - Front-end
 
-Este projeto é uma aplicação Full Stack completa desenvolvida para a disciplina de Programação Orientada a Objetos (POO). O sistema permite o gerenciamento do acervo, dos clientes, controle de empréstimos em tempo real e um **novo módulo de tickets de suporte**, com persistência de dados em banco relacional e integração de envio de e-mails.
+Este projeto é uma aplicação Full Stack completa em conjunto com o repositório " https://github.com/Bruno-lima-amaral/Projeto_Gestao_Biblioteca_Back_end.git "desenvolvida para a disciplina de Programação Orientada a Objetos (POO). O sistema permite o gerenciamento do acervo, dos clientes, controle de empréstimos em tempo real e um **novo módulo de tickets de suporte**, com persistência de dados em banco relacional e integração de envio de e-mails.
 
 ## 🚀 Funcionalidades Principais
 
