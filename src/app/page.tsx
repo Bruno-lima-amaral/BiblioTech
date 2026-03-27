@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BookOpen, Users, ClipboardList, TrendingUp } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 
@@ -14,6 +15,8 @@ export default function PaginaInicial() {
       cor: "from-blue-500/20 to-blue-600/5",
       corIcone: "text-blue-400",
       corBorda: "border-blue-500/20",
+      hoverBorda: "hover:border-blue-500/40",
+      href: "/acervo",
     },
     {
       titulo: "Clientes Cadastrados",
@@ -22,6 +25,8 @@ export default function PaginaInicial() {
       cor: "from-emerald-500/20 to-emerald-600/5",
       corIcone: "text-emerald-400",
       corBorda: "border-emerald-500/20",
+      hoverBorda: "hover:border-emerald-500/40",
+      href: "/clientes",
     },
     {
       titulo: "Empréstimos Ativos",
@@ -30,6 +35,8 @@ export default function PaginaInicial() {
       cor: "from-amber-500/20 to-amber-600/5",
       corIcone: "text-amber-400",
       corBorda: "border-amber-500/20",
+      hoverBorda: "hover:border-amber-500/40",
+      href: "/emprestimos",
     },
     {
       titulo: "Livros Disponíveis",
@@ -38,6 +45,8 @@ export default function PaginaInicial() {
       cor: "from-violet-500/20 to-violet-600/5",
       corIcone: "text-violet-400",
       corBorda: "border-violet-500/20",
+      hoverBorda: "hover:border-violet-500/40",
+      href: "/acervo",
     },
   ];
 
@@ -58,9 +67,10 @@ export default function PaginaInicial() {
         {estatisticas.map((item) => {
           const Icone = item.icone;
           return (
-            <div
+            <Link
               key={item.titulo}
-              className={`group relative overflow-hidden rounded-xl border ${item.corBorda} bg-gradient-to-br ${item.cor} p-6 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}
+              href={item.href}
+              className={`group relative overflow-hidden rounded-xl border ${item.corBorda} bg-gradient-to-br ${item.cor} p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${item.hoverBorda}`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -77,7 +87,7 @@ export default function PaginaInicial() {
                   <Icone className="h-6 w-6" />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

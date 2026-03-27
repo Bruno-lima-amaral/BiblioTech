@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -83,9 +84,47 @@ const ConteudoLateral = ({ caminhoAtual }: { caminhoAtual: string }) => (
 
 export function BarraLateral() {
   const caminhoAtual = usePathname();
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  // -- Swipe detection refs --
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    // Only start tracking if the touch begins within 30px of the left edge
+    if (touch.clientX <= 30) {
+      touchStartX.current = touch.clientX;
+      touchStartY.current = touch.clientY;
+      isSwiping.current = true;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isSwiping.current) return;
+    isSwiping.current = false;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX.current;
+    const deltaY = Math.abs(touch.clientY - touchStartY.current);
+
+    // Require a horizontal swipe of at least 60px that is more horizontal than vertical
+    if (deltaX > 60 && deltaX > deltaY) {
+      setMenuAberto(true);
+    }
+  }, []);
 
   return (
     <>
+      {/* SWIPE ZONE — invisible touch area on the left edge (mobile only) */}
+      <div
+        className="fixed inset-y-0 left-0 z-30 w-5 md:hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        aria-hidden="true"
+      />
+
       {/* HEADER MOBILE */}
       <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border bg-card px-4 md:hidden">
         <div className="flex items-center gap-3">
@@ -95,7 +134,7 @@ export function BarraLateral() {
           <span className="text-lg font-bold tracking-tight">BiblioTech</span>
         </div>
 
-        <Sheet>
+        <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
             <Menu className="h-5 w-5" />
             <span className="sr-only">Abrir menu</span>
