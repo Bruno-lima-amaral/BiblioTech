@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -24,7 +24,7 @@ const itensNavegacao = [
   { titulo: "Suporte", href: "/tickets", icone: LifeBuoy },
 ];
 
-const ConteudoLateral = ({ caminhoAtual }: { caminhoAtual: string }) => (
+const ConteudoLateral = ({ caminhoAtual, aoClicarLink }: { caminhoAtual: string; aoClicarLink?: () => void }) => (
   <>
     {/* Logo */}
     <div className="flex h-16 items-center flex-shrink-0 gap-3 border-b border-border px-6">
@@ -54,6 +54,7 @@ const ConteudoLateral = ({ caminhoAtual }: { caminhoAtual: string }) => (
           <Link
             key={item.href}
             href={item.href}
+            onClick={aoClicarLink}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
               estaAtivo
@@ -85,6 +86,11 @@ const ConteudoLateral = ({ caminhoAtual }: { caminhoAtual: string }) => (
 export function BarraLateral() {
   const caminhoAtual = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
+
+  // Fecha o menu mobile ao mudar de rota
+  useEffect(() => {
+    setMenuAberto(false);
+  }, [caminhoAtual]);
 
   // -- Swipe detection refs --
   const touchStartX = useRef(0);
@@ -142,7 +148,7 @@ export function BarraLateral() {
           <SheetContent side="left" className="w-64 p-0 flex flex-col">
             <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
             <SheetDescription className="sr-only">Navegue pelas páginas do sistema.</SheetDescription>
-            <ConteudoLateral caminhoAtual={caminhoAtual} />
+            <ConteudoLateral caminhoAtual={caminhoAtual} aoClicarLink={() => setMenuAberto(false)} />
           </SheetContent>
         </Sheet>
       </header>
