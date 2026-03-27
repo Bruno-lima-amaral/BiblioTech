@@ -50,7 +50,6 @@ export default function PaginaTickets() {
 
   // Estados do Modal de Relatório
   const [modalRelatorio, setModalRelatorio] = useState(false);
-  const [emailRelatorio, setEmailRelatorio] = useState("");
   const [enviandoRelatorio, setEnviandoRelatorio] = useState(false);
 
   // Status Badges Config
@@ -104,16 +103,15 @@ export default function PaginaTickets() {
     setModalResponder(false);
   }
 
-  async function handleEnviarRelatorio() {
-    if (!emailRelatorio.trim()) return;
+  const EMAIL_DESTINO_FIXO = "suportebibliotech26@gmail.com";
 
+  async function handleEnviarRelatorio() {
     setEnviandoRelatorio(true);
     try {
-      await enviarRelatorioTickets(emailRelatorio.trim());
+      await enviarRelatorioTickets(EMAIL_DESTINO_FIXO);
     } catch (erro) {
       console.error("Erro ao enviar relatório:", erro);
     }
-    setEmailRelatorio("");
     setEnviandoRelatorio(false);
     setModalRelatorio(false);
   }
@@ -424,27 +422,24 @@ export default function PaginaTickets() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email-relatorio">E-mail de destino</Label>
-              <Input
-                id="email-relatorio"
-                type="email"
-                placeholder="exemplo@email.com"
-                value={emailRelatorio}
-                onChange={(e) => setEmailRelatorio(e.target.value)}
-              />
+          <div className="flex flex-col gap-3 py-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Destinatário</p>
+                <p className="text-sm font-medium">{EMAIL_DESTINO_FIXO}</p>
+              </div>
             </div>
           </div>
 
           <DialogFooter>
             <Button
               onClick={handleEnviarRelatorio}
-              disabled={enviandoRelatorio || !emailRelatorio.trim()}
+              disabled={enviandoRelatorio}
               className="gap-2 w-full sm:w-auto"
             >
               <Mail className="h-4 w-4" />
-              {enviandoRelatorio ? "Enviando..." : "Enviar"}
+              {enviandoRelatorio ? "Enviando..." : "Enviar Relatório"}
             </Button>
           </DialogFooter>
         </DialogContent>
