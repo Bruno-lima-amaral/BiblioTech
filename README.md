@@ -59,7 +59,5 @@ Este projeto é uma aplicação Full Stack completa em conjunto com o repositór
 
 ---
 👨‍💻 **Autores:**
-- **Bruno Lima Amaral** - Estudante de Engenharia/TI - 4º Semestre
-- **Pedro Henrique Rodrigues dos Santos** - Estudante de Engenharia/TI - 4º Semestre
-
-*"Desenvolvido em uma maratona épica de código, superando desafios de integração e infraestrutura."*
+- **Bruno Lima Amaral** - Estudante de Ciência da Computação - 4º Semestre
+- **Pedro Henrique Rodrigues dos Santos** - Estudante de Ciência da Computação - 4º Semestre
