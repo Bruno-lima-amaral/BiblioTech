@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LifeBuoy, Plus, Search, Filter } from "lucide-react";
+import { LifeBuoy, Plus, Search, Filter, Play, CheckCircle2, MessageSquareReply } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,20 +27,26 @@ import {
 import type { Ticket } from "@/lib/dados-mockados";
 
 export default function PaginaTickets() {
-  const { tickets, criarTicket } = useBiblioteca();
+  const { tickets, criarTicket, atualizarStatusTicket, responderTicket } = useBiblioteca();
 
   // Estados dos Filtros
   const [busca, setBusca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("TODAS");
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("TODAS");
 
-  // Estados do Modal
+  // Estados do Modal de Criação
   const [modalCriar, setModalCriar] = useState(false);
   const [novoTitulo, setNovoTitulo] = useState("");
   const [novaCategoria, setNovaCategoria] = useState<Ticket["categoria"]>("DUVIDA");
   const [novaPrioridade, setNovaPrioridade] = useState<Ticket["prioridade"]>("MEDIA");
   const [novaDescricao, setNovaDescricao] = useState("");
   const [salvando, setSalvando] = useState(false);
+
+  // Estados do Modal de Resposta
+  const [modalResponder, setModalResponder] = useState(false);
+  const [ticketParaResponder, setTicketParaResponder] = useState<Ticket | null>(null);
+  const [textoResposta, setTextoResposta] = useState("");
+  const [enviandoResposta, setEnviandoResposta] = useState(false);
 
   // Status Badges Config
   const statusConfig = {
@@ -76,6 +82,23 @@ export default function PaginaTickets() {
     setModalCriar(false);
   }
 
+  function abrirModalResponder(ticket: Ticket) {
+    setTicketParaResponder(ticket);
+    setTextoResposta("");
+    setModalResponder(true);
+  }
+
+  async function handleEnviarResposta() {
+    if (!ticketParaResponder || !textoResposta.trim()) return;
+
+    setEnviandoResposta(true);
+    await responderTicket(ticketParaResponder.id, textoResposta.trim());
+    setTextoResposta("");
+    setTicketParaResponder(null);
+    setEnviandoResposta(false);
+    setModalResponder(false);
+  }
+
   // Formatador de Data
   function formatarData(dataIso: string) {
     if (!dataIso) return "N/A";
@@ -99,28 +122,90 @@ export default function PaginaTickets() {
   const emAnalise = [...ticketsFiltrados].filter((t) => t.status === "EM_ANALISE").reverse();
   const concluidos = [...ticketsFiltrados].filter((t) => t.status === "CONCLUIDO").reverse();
 
-  // Componente de Ticket Compacto
-  const RenderizarTicket = ({ ticket }: { ticket: Ticket }) => (
-    <div key={ticket.id} className="p-3 bg-muted/30 border border-border/60 rounded-lg shadow-sm flex flex-col gap-3 hover:bg-muted/50 hover:border-border transition-all">
-      <div className="flex justify-between items-start gap-2">
-        <h3 className="text-sm font-medium leading-tight">{ticket.titulo}</h3>
-        <span className="text-xs font-mono text-muted-foreground font-semibold bg-background px-1.5 py-0.5 rounded-md border border-border shrink-0">
-          #{ticket.id?.toString().padStart(3, "0") || "000"}
-        </span>
-      </div>
-      <div className="flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 border ${prioridadeConfig[ticket.prioridade]?.className || ""}`}>
-            {prioridadeConfig[ticket.prioridade]?.label || ticket.prioridade}
-          </Badge>
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            {ticket.categoria === "BUG" ? "Bug" : ticket.categoria === "SUGESTAO" ? "Sugestão" : "Dúvida"}
+  // Componente de Ticket Compacto com Ações
+  const RenderizarTicket = ({ ticket }: { ticket: Ticket }) => {
+    const isAberto = ticket.status === "ABERTO";
+    const isEmAnalise = ticket.status === "EM_ANALISE";
+    const isConcluido = ticket.status === "CONCLUIDO";
+    const isBug = ticket.categoria === "BUG";
+    const isDuvidaOuSugestao = ticket.categoria === "DUVIDA" || ticket.categoria === "SUGESTAO";
+    const temResposta = ticket.resposta && ticket.resposta.trim() !== "";
+
+    return (
+      <div key={ticket.id} className="p-3 bg-muted/30 border border-border/60 rounded-lg shadow-sm flex flex-col gap-3 hover:bg-muted/50 hover:border-border transition-all">
+        <div className="flex justify-between items-start gap-2">
+          <h3 className="text-sm font-medium leading-tight">{ticket.titulo}</h3>
+          <span className="text-xs font-mono text-muted-foreground font-semibold bg-background px-1.5 py-0.5 rounded-md border border-border shrink-0">
+            #{ticket.id?.toString().padStart(3, "0") || "000"}
           </span>
         </div>
-        <span className="text-[10px] text-muted-foreground font-medium">{formatarData(ticket.dataCriacao)}</span>
+
+        {/* Exibição da Resposta */}
+        {temResposta && (
+          <div className="border-l-2 border-emerald-500/50 bg-emerald-500/5 rounded-r-md px-3 py-2">
+            <p className="text-[11px] font-medium text-emerald-400 mb-0.5">Resposta:</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{ticket.resposta}</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 border ${prioridadeConfig[ticket.prioridade]?.className || ""}`}>
+              {prioridadeConfig[ticket.prioridade]?.label || ticket.prioridade}
+            </Badge>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              {ticket.categoria === "BUG" ? "Bug" : ticket.categoria === "SUGESTAO" ? "Sugestão" : "Dúvida"}
+            </span>
+          </div>
+          <span className="text-[10px] text-muted-foreground font-medium">{formatarData(ticket.dataCriacao)}</span>
+        </div>
+
+        {/* Área de Ações */}
+        {(!isConcluido || (isDuvidaOuSugestao && !temResposta)) && (
+          <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+            {/* Ticket ABERTO → Botão "Analisar" */}
+            {isAberto && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                onClick={() => atualizarStatusTicket(ticket.id, "EM_ANALISE")}
+              >
+                <Play className="h-3 w-3" />
+                Analisar
+              </Button>
+            )}
+
+            {/* BUG em EM_ANALISE → Botão "Concluir" */}
+            {isBug && isEmAnalise && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                onClick={() => atualizarStatusTicket(ticket.id, "CONCLUIDO")}
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                Concluir
+              </Button>
+            )}
+
+            {/* DUVIDA ou SUGESTAO e NÃO concluído → Botão "Responder" */}
+            {isDuvidaOuSugestao && !isConcluido && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-violet-400 hover:text-violet-300 hover:bg-violet-500/10"
+                onClick={() => abrirModalResponder(ticket)}
+              >
+                <MessageSquareReply className="h-3 w-3" />
+                Responder
+              </Button>
+            )}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -260,6 +345,46 @@ export default function PaginaTickets() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Modal de Resposta */}
+      <Dialog open={modalResponder} onOpenChange={(open) => { setModalResponder(open); if (!open) setTicketParaResponder(null); }}>
+        <DialogContent className="w-[90vw] sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Responder Chamado</DialogTitle>
+            <DialogDescription>
+              {ticketParaResponder && (
+                <>
+                  Respondendo ao ticket <span className="font-mono font-semibold text-foreground">#{ticketParaResponder.id?.toString().padStart(3, "0")}</span> — <span className="text-foreground">{ticketParaResponder.titulo}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="resposta-texto">Sua Resposta</Label>
+              <Textarea
+                id="resposta-texto"
+                placeholder="Digite a resposta para o chamado..."
+                className="min-h-[120px]"
+                value={textoResposta}
+                onChange={(e) => setTextoResposta(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleEnviarResposta}
+              disabled={enviandoResposta || !textoResposta.trim()}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <MessageSquareReply className="h-4 w-4" />
+              {enviandoResposta ? "Enviando..." : "Enviar Resposta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Grid Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">

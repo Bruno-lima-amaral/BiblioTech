@@ -28,6 +28,8 @@ interface BibliotecaContexto {
   devolverEmprestimo: (emprestimoId: number) => void;
   carregarTickets: () => Promise<void>;
   criarTicket: (dados: Omit<Ticket, "id" | "status" | "dataCriacao">) => Promise<void>;
+  atualizarStatusTicket: (id: number, novoStatus: string) => Promise<void>;
+  responderTicket: (id: number, resposta: string) => Promise<void>;
 }
 
 const Contexto = createContext<BibliotecaContexto | null>(null);
@@ -107,6 +109,51 @@ export function BibliotecaProvider({
         }
       } catch (erro) {
         console.error("Erro ao criar ticket:", erro);
+      }
+    },
+    []
+  );
+
+  const atualizarStatusTicket = useCallback(
+    async (id: number, novoStatus: string) => {
+      try {
+        const res = await fetch(`${API_BASE}/tickets/${id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(novoStatus),
+        });
+        if (res.ok) {
+          setTickets((prev) =>
+            prev.map((t) =>
+              t.id === id ? { ...t, status: novoStatus as Ticket["status"] } : t
+            )
+          );
+        }
+      } catch (erro) {
+        console.error("Erro ao atualizar status do ticket:", erro);
+      }
+    },
+    []
+  );
+
+  const responderTicket = useCallback(
+    async (id: number, resposta: string) => {
+      try {
+        const res = await fetch(`${API_BASE}/tickets/${id}/resposta`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(resposta),
+        });
+        if (res.ok) {
+          // A API muda status para CONCLUIDO automaticamente ao responder
+          setTickets((prev) =>
+            prev.map((t) =>
+              t.id === id ? { ...t, resposta, status: "CONCLUIDO" } : t
+            )
+          );
+        }
+      } catch (erro) {
+        console.error("Erro ao responder ticket:", erro);
       }
     },
     []
@@ -307,6 +354,8 @@ export function BibliotecaProvider({
         tickets,
         carregarTickets,
         criarTicket,
+        atualizarStatusTicket,
+        responderTicket,
       }}
     >
       {children}

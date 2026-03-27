@@ -30,6 +30,7 @@ export interface Ticket {
   status: "ABERTO" | "EM_ANALISE" | "CONCLUIDO";
   descricao: string;
   dataCriacao: string;
+  resposta?: string | null;
 }
 
 // ─── Dados Mockados ─────────────────────────────────────────────────
