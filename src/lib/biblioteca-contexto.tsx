@@ -30,6 +30,7 @@ interface BibliotecaContexto {
   criarTicket: (dados: Omit<Ticket, "id" | "status" | "dataCriacao">) => Promise<void>;
   atualizarStatusTicket: (id: number, novoStatus: string) => Promise<void>;
   responderTicket: (id: number, resposta: string) => Promise<void>;
+  enviarRelatorioTickets: (emailDestino: string) => Promise<void>;
 }
 
 const Contexto = createContext<BibliotecaContexto | null>(null);
@@ -158,6 +159,15 @@ export function BibliotecaProvider({
     },
     []
   );
+
+  const enviarRelatorioTickets = useCallback(async (emailDestino: string) => {
+    const res = await fetch(`${API_BASE}/tickets/relatorio`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: emailDestino,
+    });
+    if (!res.ok) throw new Error("Erro ao enviar relatório");
+  }, []);
 
   // ─── Livros ────────────────────────────────────────────────────
 
@@ -356,6 +366,7 @@ export function BibliotecaProvider({
         criarTicket,
         atualizarStatusTicket,
         responderTicket,
+        enviarRelatorioTickets,
       }}
     >
       {children}

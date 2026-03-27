@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LifeBuoy, Plus, Search, Filter, Play, CheckCircle2, MessageSquareReply } from "lucide-react";
+import { LifeBuoy, Plus, Search, Filter, Play, CheckCircle2, MessageSquareReply, Mail } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
 import type { Ticket } from "@/lib/dados-mockados";
 
 export default function PaginaTickets() {
-  const { tickets, criarTicket, atualizarStatusTicket, responderTicket } = useBiblioteca();
+  const { tickets, criarTicket, atualizarStatusTicket, responderTicket, enviarRelatorioTickets } = useBiblioteca();
 
   // Estados dos Filtros
   const [busca, setBusca] = useState("");
@@ -47,6 +47,11 @@ export default function PaginaTickets() {
   const [ticketParaResponder, setTicketParaResponder] = useState<Ticket | null>(null);
   const [textoResposta, setTextoResposta] = useState("");
   const [enviandoResposta, setEnviandoResposta] = useState(false);
+
+  // Estados do Modal de Relatório
+  const [modalRelatorio, setModalRelatorio] = useState(false);
+  const [emailRelatorio, setEmailRelatorio] = useState("");
+  const [enviandoRelatorio, setEnviandoRelatorio] = useState(false);
 
   // Status Badges Config
   const statusConfig = {
@@ -97,6 +102,20 @@ export default function PaginaTickets() {
     setTicketParaResponder(null);
     setEnviandoResposta(false);
     setModalResponder(false);
+  }
+
+  async function handleEnviarRelatorio() {
+    if (!emailRelatorio.trim()) return;
+
+    setEnviandoRelatorio(true);
+    try {
+      await enviarRelatorioTickets(emailRelatorio.trim());
+    } catch (erro) {
+      console.error("Erro ao enviar relatório:", erro);
+    }
+    setEmailRelatorio("");
+    setEnviandoRelatorio(false);
+    setModalRelatorio(false);
   }
 
   // Formatador de Data
@@ -344,6 +363,15 @@ export default function PaginaTickets() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Button
+          variant="outline"
+          className="gap-2 w-full sm:w-auto h-9"
+          onClick={() => setModalRelatorio(true)}
+        >
+          <Mail className="h-4 w-4" />
+          Enviar Relatório
+        </Button>
       </div>
 
       {/* Modal de Resposta */}
@@ -381,6 +409,42 @@ export default function PaginaTickets() {
             >
               <MessageSquareReply className="h-4 w-4" />
               {enviandoResposta ? "Enviando..." : "Enviar Resposta"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Relatório por E-mail */}
+      <Dialog open={modalRelatorio} onOpenChange={setModalRelatorio}>
+        <DialogContent className="w-[90vw] sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Enviar Relatório de Tickets</DialogTitle>
+            <DialogDescription>
+              Um e-mail será enviado contendo todos os chamados com status ABERTO.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email-relatorio">E-mail de destino</Label>
+              <Input
+                id="email-relatorio"
+                type="email"
+                placeholder="exemplo@email.com"
+                value={emailRelatorio}
+                onChange={(e) => setEmailRelatorio(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={handleEnviarRelatorio}
+              disabled={enviandoRelatorio || !emailRelatorio.trim()}
+              className="gap-2 w-full sm:w-auto"
+            >
+              <Mail className="h-4 w-4" />
+              {enviandoRelatorio ? "Enviando..." : "Enviar"}
             </Button>
           </DialogFooter>
         </DialogContent>
