@@ -1,11 +1,19 @@
 // Tipos baseados no Diagrama de Classes do sistema
 
+export interface Beneficiador {
+  id: number;
+  nome: string;
+  cnpj: string;
+  telefone: string;
+}
+
 export interface Livro {
   id: number;
   titulo: string;
   autor: string;
   ano: number;
   disponivel: boolean;
+  beneficiador?: Beneficiador | null;
 }
 
 export interface Cliente {

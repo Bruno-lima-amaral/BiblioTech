@@ -23,20 +23,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Livro } from "@/lib/dados-mockados";
+import type { Livro, Beneficiador } from "@/lib/dados-mockados";
 
 const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/livros";
+const API_BENEFICIADORES = "https://projetogestaobibliotecabackend-production.up.railway.app/api/beneficiadores";
 
 
 export default function PaginaAcervo() {
   const [livros, setLivros] = useState<Livro[]>([]);
   const [busca, setBusca] = useState("");
+  const [beneficiadores, setBeneficiadores] = useState<Beneficiador[]>([]);
 
   // Modal de Criar
   const [modalCriar, setModalCriar] = useState(false);
   const [novoTitulo, setNovoTitulo] = useState("");
   const [novoAutor, setNovoAutor] = useState("");
   const [novoAno, setNovoAno] = useState("");
+  const [novoBeneficiador, setNovoBeneficiador] = useState("");
 
   // Modal de Editar
   const [modalEditar, setModalEditar] = useState(false);
@@ -44,19 +47,23 @@ export default function PaginaAcervo() {
   const [editTitulo, setEditTitulo] = useState("");
   const [editAutor, setEditAutor] = useState("");
   const [editAno, setEditAno] = useState("");
+  const [editBeneficiador, setEditBeneficiador] = useState("");
 
-  // ─── GET — Carregar livros ao montar ─────────────────────────────
+  // ─── GET — Carregar livros e beneficiadores ao montar ────────────
   useEffect(() => {
-    async function carregarLivros() {
+    async function carregarDados() {
       try {
-        const res = await fetch(API_URL);
-        const dados: Livro[] = await res.json();
-        setLivros(dados);
+        const [resLivros, resBenef] = await Promise.all([
+          fetch(API_URL),
+          fetch(API_BENEFICIADORES),
+        ]);
+        if (resLivros.ok) setLivros(await resLivros.json());
+        if (resBenef.ok) setBeneficiadores(await resBenef.json());
       } catch (erro) {
-        console.error("Erro ao carregar livros:", erro);
+        console.error("Erro ao carregar dados:", erro);
       }
     }
-    carregarLivros();
+    carregarDados();
   }, []);
 
   const livrosFiltrados = livros.filter((livro) => {
@@ -71,15 +78,18 @@ export default function PaginaAcervo() {
   async function salvarLivro() {
     if (!novoTitulo.trim() || !novoAutor.trim() || !novoAno.trim()) return;
     try {
+      const payload: Record<string, unknown> = {
+        titulo: novoTitulo.trim(),
+        autor: novoAutor.trim(),
+        ano: parseInt(novoAno),
+      };
+      if (novoBeneficiador) {
+        payload.beneficiadorId = parseInt(novoBeneficiador);
+      }
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titulo: novoTitulo.trim(),
-          autor: novoAutor.trim(),
-          ano: parseInt(novoAno),
-          disponivel: true,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const livroCriado: Livro = await res.json();
@@ -87,6 +97,7 @@ export default function PaginaAcervo() {
         setNovoTitulo("");
         setNovoAutor("");
         setNovoAno("");
+        setNovoBeneficiador("");
         setModalCriar(false);
       }
     } catch (erro) {
@@ -112,21 +123,24 @@ export default function PaginaAcervo() {
     setEditTitulo(livro.titulo);
     setEditAutor(livro.autor);
     setEditAno(livro.ano.toString());
+    setEditBeneficiador(livro.beneficiador?.id?.toString() ?? "");
     setModalEditar(true);
   }
 
   async function salvarEdicao() {
     if (!livroEditando || !editTitulo.trim() || !editAutor.trim() || !editAno.trim()) return;
     try {
+      const payload: Record<string, unknown> = {
+        titulo: editTitulo.trim(),
+        autor: editAutor.trim(),
+        ano: parseInt(editAno),
+        disponivel: livroEditando.disponivel,
+        beneficiadorId: editBeneficiador ? parseInt(editBeneficiador) : null,
+      };
       const res = await fetch(`${API_URL}/${livroEditando.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titulo: editTitulo.trim(),
-          autor: editAutor.trim(),
-          ano: parseInt(editAno),
-          disponivel: livroEditando.disponivel,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         const livroAtualizado: Livro = await res.json();
@@ -201,6 +215,31 @@ export default function PaginaAcervo() {
                 <div className="grid gap-2">
                   <Label htmlFor="ano">Ano de Publicação</Label>
                   <Input id="ano" type="number" placeholder="Ex: 1988" value={novoAno} onChange={(e) => setNovoAno(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="beneficiador">
+                    Beneficiador{" "}
+                    <span className="text-muted-foreground font-normal">(opcional)</span>
+                  </Label>
+                  <select
+                    id="beneficiador"
+                    value={novoBeneficiador}
+                    onChange={(e) => setNovoBeneficiador(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring dark:bg-input/30"
+                  >
+                    <option value="" className="bg-popover text-popover-foreground">
+                      Nenhum beneficiador
+                    </option>
+                    {beneficiadores.map((b) => (
+                      <option
+                        key={b.id}
+                        value={b.id}
+                        className="bg-popover text-popover-foreground"
+                      >
+                        {b.nome} — {b.cnpj}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <DialogFooter>
@@ -324,6 +363,31 @@ export default function PaginaAcervo() {
             <div className="grid gap-2">
               <Label htmlFor="edit-ano">Ano de Publicação</Label>
               <Input id="edit-ano" type="number" value={editAno} onChange={(e) => setEditAno(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-beneficiador">
+                Beneficiador{" "}
+                <span className="text-muted-foreground font-normal">(opcional)</span>
+              </Label>
+              <select
+                id="edit-beneficiador"
+                value={editBeneficiador}
+                onChange={(e) => setEditBeneficiador(e.target.value)}
+                className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring dark:bg-input/30"
+              >
+                <option value="" className="bg-popover text-popover-foreground">
+                  Nenhum beneficiador
+                </option>
+                {beneficiadores.map((b) => (
+                  <option
+                    key={b.id}
+                    value={b.id}
+                    className="bg-popover text-popover-foreground"
+                  >
+                    {b.nome} — {b.cnpj}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <DialogFooter>
