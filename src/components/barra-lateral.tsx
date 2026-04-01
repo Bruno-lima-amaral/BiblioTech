@@ -8,6 +8,7 @@ import {
   BookOpen,
   Users,
   ClipboardList,
+  Landmark,
   Library,
   LifeBuoy,
   Menu,
@@ -21,6 +22,7 @@ const itensNavegacao = [
   { titulo: "Acervo", href: "/acervo", icone: BookOpen },
   { titulo: "Clientes", href: "/clientes", icone: Users },
   { titulo: "Empréstimos", href: "/emprestimos", icone: ClipboardList },
+  { titulo: "Balcão", href: "/balcao", icone: Landmark },
   { titulo: "Suporte", href: "/tickets", icone: LifeBuoy },
 ];
 
