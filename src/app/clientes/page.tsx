@@ -35,12 +35,16 @@ export default function PaginaClientes() {
   const [modalCriar, setModalCriar] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoEmail, setNovoEmail] = useState("");
+  const [novoCpf, setNovoCpf] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
 
   // Modal de Editar
   const [modalEditar, setModalEditar] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editCpf, setEditCpf] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
 
   // ─── GET — Carregar clientes ao montar ───────────────────────────
   useEffect(() => {
@@ -66,7 +70,7 @@ export default function PaginaClientes() {
 
   // ─── POST — Cadastrar novo cliente ───────────────────────────────
   async function salvarCliente() {
-    if (!novoNome.trim() || !novoEmail.trim()) return;
+    if (!novoNome.trim() || !novoEmail.trim() || !novoCpf.trim() || !novoTelefone.trim()) return;
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -74,6 +78,8 @@ export default function PaginaClientes() {
         body: JSON.stringify({
           nome: novoNome.trim(),
           email: novoEmail.trim(),
+          cpf: novoCpf.trim(),
+          telefone: novoTelefone.trim(),
         }),
       });
       if (res.ok) {
@@ -81,6 +87,8 @@ export default function PaginaClientes() {
         setClientes((prev) => [...prev, clienteCriado]);
         setNovoNome("");
         setNovoEmail("");
+        setNovoCpf("");
+        setNovoTelefone("");
         setModalCriar(false);
       }
     } catch (erro) {
@@ -105,11 +113,13 @@ export default function PaginaClientes() {
     setClienteEditando(cliente);
     setEditNome(cliente.nome);
     setEditEmail(cliente.email);
+    setEditCpf(cliente.cpf || "");
+    setEditTelefone(cliente.telefone || "");
     setModalEditar(true);
   }
 
   async function salvarEdicao() {
-    if (!clienteEditando || !editNome.trim() || !editEmail.trim()) return;
+    if (!clienteEditando || !editNome.trim() || !editEmail.trim() || !editCpf.trim() || !editTelefone.trim()) return;
     try {
       const res = await fetch(`${API_URL}/${clienteEditando.id}`, {
         method: "PUT",
@@ -117,6 +127,8 @@ export default function PaginaClientes() {
         body: JSON.stringify({
           nome: editNome.trim(),
           email: editEmail.trim(),
+          cpf: editCpf.trim(),
+          telefone: editTelefone.trim(),
         }),
       });
       if (res.ok) {
@@ -187,6 +199,14 @@ export default function PaginaClientes() {
                   <Label htmlFor="email">E-mail</Label>
                   <Input id="email" type="email" placeholder="Ex: maria@email.com" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input id="cpf" placeholder="000.000.000-00" value={novoCpf} onChange={(e) => setNovoCpf(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="telefone">Telefone</Label>
+                  <Input id="telefone" placeholder="(11) 90000-0000" value={novoTelefone} onChange={(e) => setNovoTelefone(e.target.value)} />
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={salvarCliente} className="gap-2">
@@ -215,13 +235,15 @@ export default function PaginaClientes() {
               <TableHead className="w-16 text-center font-semibold">ID</TableHead>
               <TableHead className="font-semibold">Nome</TableHead>
               <TableHead className="font-semibold">E-mail</TableHead>
+              <TableHead className="font-semibold">CPF</TableHead>
+              <TableHead className="font-semibold">Telefone</TableHead>
               <TableHead className="w-28 text-center font-semibold">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clientesFiltrados.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                   Nenhum cliente encontrado para &quot;{busca}&quot;.
                 </TableCell>
               </TableRow>
@@ -238,6 +260,8 @@ export default function PaginaClientes() {
                       {cliente.email}
                     </div>
                   </TableCell>
+                  <TableCell className="text-muted-foreground">{cliente.cpf}</TableCell>
+                  <TableCell className="text-muted-foreground">{cliente.telefone}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Button
@@ -284,6 +308,14 @@ export default function PaginaClientes() {
             <div className="grid gap-2">
               <Label htmlFor="edit-email">E-mail</Label>
               <Input id="edit-email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input id="edit-cpf" value={editCpf} onChange={(e) => setEditCpf(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-telefone">Telefone</Label>
+              <Input id="edit-telefone" value={editTelefone} onChange={(e) => setEditTelefone(e.target.value)} />
             </div>
           </div>
           <DialogFooter>

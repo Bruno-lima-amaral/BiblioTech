@@ -20,6 +20,8 @@ export interface Cliente {
   id: number;
   nome: string;
   email: string;
+  cpf: string;
+  telefone: string;
 }
 
 export interface Emprestimo {
@@ -107,10 +109,10 @@ export const livrosMockados: Livro[] = [
 ];
 
 export const clientesMockados: Cliente[] = [
-  { id: 1, nome: "Ana Silva", email: "ana.silva@email.com" },
-  { id: 2, nome: "Carlos Oliveira", email: "carlos.oliveira@email.com" },
-  { id: 3, nome: "Beatriz Santos", email: "beatriz.santos@email.com" },
-  { id: 4, nome: "Pedro Souza", email: "pedro.souza@email.com" },
+  { id: 1, nome: "Ana Silva", email: "ana.silva@email.com", cpf: "111.111.111-11", telefone: "(11) 91111-1111" },
+  { id: 2, nome: "Carlos Oliveira", email: "carlos.oliveira@email.com", cpf: "222.222.222-22", telefone: "(11) 92222-2222" },
+  { id: 3, nome: "Beatriz Santos", email: "beatriz.santos@email.com", cpf: "333.333.333-33", telefone: "(11) 93333-3333" },
+  { id: 4, nome: "Pedro Souza", email: "pedro.souza@email.com", cpf: "444.444.444-44", telefone: "(11) 94444-4444" },
 ];
 
 export const emprestimosMockados: Emprestimo[] = [
