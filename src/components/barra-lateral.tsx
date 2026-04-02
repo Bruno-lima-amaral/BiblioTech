@@ -18,10 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const itensNavegacao = [
-  { titulo: "Início", href: "/", icone: Home },
+  { titulo: "Dashboard", href: "/", icone: Home },
   { titulo: "Acervo", href: "/acervo", icone: BookOpen },
   { titulo: "Clientes", href: "/clientes", icone: Users },
-  { titulo: "Empréstimos", href: "/emprestimos", icone: ClipboardList },
+  { titulo: "Histórico de Empréstimos", href: "/emprestimos", icone: ClipboardList },
   { titulo: "Balcão", href: "/balcao", icone: Landmark },
   { titulo: "Suporte", href: "/tickets", icone: LifeBuoy },
 ];
