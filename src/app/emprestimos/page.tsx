@@ -195,9 +195,6 @@ export default function PaginaEmprestimos() {
               <TableHead className="w-36 text-center font-semibold">
                 Status
               </TableHead>
-              <TableHead className="w-28 text-center font-semibold">
-                Ação
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
