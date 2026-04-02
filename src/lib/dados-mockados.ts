@@ -26,6 +26,10 @@ export interface Emprestimo {
   id: number;
   dataEmprestimo: string;
   dataDevolucao: string | null;
+  dataPrevistaDevolucao: string;
+  prazoDias?: number;
+  renovacoesRealizadas?: number;
+  status?: string;
   livro: Livro;
   cliente: Cliente;
 }
@@ -113,6 +117,7 @@ export const emprestimosMockados: Emprestimo[] = [
   {
     id: 1,
     dataEmprestimo: "2026-03-01",
+    dataPrevistaDevolucao: "2026-03-08",
     dataDevolucao: null,
     livro: livrosMockados[1],
     cliente: clientesMockados[0],
@@ -120,6 +125,7 @@ export const emprestimosMockados: Emprestimo[] = [
   {
     id: 2,
     dataEmprestimo: "2026-03-05",
+    dataPrevistaDevolucao: "2026-03-12",
     dataDevolucao: null,
     livro: livrosMockados[4],
     cliente: clientesMockados[1],
@@ -127,6 +133,7 @@ export const emprestimosMockados: Emprestimo[] = [
   {
     id: 3,
     dataEmprestimo: "2026-02-20",
+    dataPrevistaDevolucao: "2026-02-27",
     dataDevolucao: "2026-03-10",
     livro: livrosMockados[0],
     cliente: clientesMockados[2],

@@ -235,12 +235,16 @@ export default function PaginaEmprestimos() {
                       "pt-BR"
                     )}
                   </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
-                    {emprestimo.dataDevolucao
-                      ? new Date(
-                          emprestimo.dataDevolucao
-                        ).toLocaleDateString("pt-BR")
-                      : "—"}
+                  <TableCell className="text-center font-medium">
+                    {emprestimo.dataDevolucao ? (
+                      <span className="text-emerald-400">
+                        {new Date(emprestimo.dataDevolucao).toLocaleDateString("pt-BR")}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/70 text-sm">
+                        Prevista: {new Date(emprestimo.dataPrevistaDevolucao).toLocaleDateString("pt-BR")}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     {emprestimo.dataDevolucao ? (
