@@ -27,6 +27,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ─── Empréstimos ───────────────────────────────────────────────────
 
+export async function listarEmprestimos() {
+  const res = await fetch(`${API_BASE}/emprestimos`);
+  return handleResponse<any[]>(res);
+}
+
 export async function renovarEmprestimo(id: number) {
   const res = await fetch(`${API_BASE}/emprestimos/${id}/renovar`, {
     method: "PUT",

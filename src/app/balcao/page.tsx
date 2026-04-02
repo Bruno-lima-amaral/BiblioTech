@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Landmark,
   RefreshCw,
@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  listarEmprestimos,
   renovarEmprestimo as apiRenovar,
   devolverEmprestimo as apiDevolver,
   cadastrarBeneficiador,
@@ -55,46 +56,6 @@ interface Toast {
   tipo: "sucesso" | "erro";
   mensagem: string;
 }
-
-// ─── Mock de empréstimos ativos ────────────────────────────────────
-
-const EMPRESTIMOS_MOCK: EmprestimoBalcao[] = [
-  {
-    id: 1,
-    nomeCliente: "Ana Silva",
-    tituloLivro: "Dom Casmurro",
-    dataPrevistaDevolucao: "2026-04-10",
-    renovacoesRealizadas: 0,
-  },
-  {
-    id: 2,
-    nomeCliente: "Carlos Oliveira",
-    tituloLivro: "Grande Sertão: Veredas",
-    dataPrevistaDevolucao: "2026-04-05",
-    renovacoesRealizadas: 2,
-  },
-  {
-    id: 3,
-    nomeCliente: "Beatriz Santos",
-    tituloLivro: "Memórias Póstumas de Brás Cubas",
-    dataPrevistaDevolucao: "2026-04-15",
-    renovacoesRealizadas: 1,
-  },
-  {
-    id: 4,
-    nomeCliente: "Pedro Souza",
-    tituloLivro: "O Cortiço",
-    dataPrevistaDevolucao: "2026-03-28",
-    renovacoesRealizadas: 3,
-  },
-  {
-    id: 5,
-    nomeCliente: "Mariana Costa",
-    tituloLivro: "Iracema",
-    dataPrevistaDevolucao: "2026-04-12",
-    renovacoesRealizadas: 0,
-  },
-];
 
 // ─── Componente Toast ──────────────────────────────────────────────
 
@@ -143,11 +104,11 @@ function ToastContainer({
 // ─── Página principal ──────────────────────────────────────────────
 
 export default function PaginaBalcao() {
-  const [emprestimos, setEmprestimos] =
-    useState<EmprestimoBalcao[]>(EMPRESTIMOS_MOCK);
+  const [emprestimos, setEmprestimos] = useState<EmprestimoBalcao[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState<Record<string, boolean>>({});
+  const [carregandoDados, setCarregandoDados] = useState(true);
 
   // Modal Beneficiador
   const [modalBeneficiador, setModalBeneficiador] = useState(false);
@@ -155,6 +116,29 @@ export default function PaginaBalcao() {
   const [benefCnpj, setBenefCnpj] = useState("");
   const [benefTelefone, setBenefTelefone] = useState("");
   const [salvandoBenef, setSalvandoBenef] = useState(false);
+
+  // Buscar dados reais da API
+  useEffect(() => {
+    async function carregar() {
+      try {
+        const dados = await listarEmprestimos();
+        const ativos = dados.filter((e: any) => e.status === "ATIVO");
+        const mapDados: EmprestimoBalcao[] = ativos.map((e: any) => ({
+          id: e.id,
+          nomeCliente: e.cliente?.nome || "Desconhecido",
+          tituloLivro: e.livro?.titulo || "Desconhecido",
+          dataPrevistaDevolucao: e.dataPrevistaDevolucao,
+          renovacoesRealizadas: e.renovacoesRealizadas || 0,
+        }));
+        setEmprestimos(mapDados);
+      } catch (err) {
+        console.error("Erro ao carregar empréstimos", err);
+      } finally {
+        setCarregandoDados(false);
+      }
+    }
+    carregar();
+  }, []);
 
   // ─── Toast helpers ───────────────────────────────────────────────
 
@@ -429,7 +413,19 @@ export default function PaginaBalcao() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {emprestimosFiltrados.length === 0 ? (
+            {carregandoDados ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-muted-foreground"
+                >
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+                    <span>Carregando empréstimos ativos...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : emprestimosFiltrados.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
