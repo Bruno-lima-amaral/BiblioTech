@@ -41,7 +41,7 @@ Essa branch é uma aplicação Front-end com dados Mockados, simulando o gerenci
 
 ## 👨‍💻 Autores
 
-- **Bruno Lima Amaral** - Estudante de Engenharia/TI - 4º Semestre
-- **Pedro Henrique Rodrigues dos Santos** - Estudante de Engenharia/TI - 4º Semestre
+- **Bruno Lima Amaral** - Estudante de Ciência da Computação/TI - 4º Semestre
+- **Pedro Henrique Rodrigues dos Santos** - Estudante de Ciência da Computação/TI - 4º Semestre
 
-> *"Desenvolvido em uma maratona épica de código, superando desafios de integração e infraestrutura."*
+> *"Desenvolvido em conjunto para superar desafios de integração e infraestrutura."*
