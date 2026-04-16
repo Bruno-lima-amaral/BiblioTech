@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Ticket } from "@/lib/dados-mockados";
+import { ticketsMockados, type Ticket } from "@/lib/dados-mockados";
 
 export default function PaginaTickets() {
   const { tickets, criarTicket, atualizarStatusTicket, responderTicket, enviarRelatorioTickets } = useBiblioteca();

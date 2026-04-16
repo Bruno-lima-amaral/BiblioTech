@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardList, BookOpen, Plus, Undo2 } from "lucide-react";
+import { ClipboardList, BookOpen, Plus, Undo2, FileSpreadsheet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,8 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
-
-const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/emprestimos";
+import { exportarEmprestimos } from "@/lib/exportar-excel";
 
 export default function PaginaEmprestimos() {
   const { livros, clientes, emprestimos, criarEmprestimo, devolverEmprestimo } =
@@ -62,7 +61,18 @@ export default function PaginaEmprestimos() {
           </div>
         </div>
 
-        {/* Botão Novo Empréstimo */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          {/* Botão Exportar Excel */}
+          <Button
+            variant="outline"
+            className="gap-2 w-full sm:w-auto border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+            onClick={() => exportarEmprestimos(emprestimos)}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar Excel
+          </Button>
+
+          {/* Botão Novo Empréstimo */}
         <Dialog open={modalAberto} onOpenChange={setModalAberto}>
           <DialogTrigger
             render={
@@ -150,6 +160,7 @@ export default function PaginaEmprestimos() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Resumo */}

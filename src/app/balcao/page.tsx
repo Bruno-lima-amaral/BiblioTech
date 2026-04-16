@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   Landmark,
   RefreshCw,
@@ -34,22 +34,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  listarEmprestimos,
-  renovarEmprestimo as apiRenovar,
-  devolverEmprestimo as apiDevolver,
-  cadastrarBeneficiador,
-} from "@/services/api";
+import { useBiblioteca } from "@/lib/biblioteca-contexto";
 
 // ─── Tipos locais ──────────────────────────────────────────────────
-
-interface EmprestimoBalcao {
-  id: number;
-  nomeCliente: string;
-  tituloLivro: string;
-  dataPrevistaDevolucao: string;
-  renovacoesRealizadas: number;
-}
 
 interface Toast {
   id: number;
@@ -104,41 +91,18 @@ function ToastContainer({
 // ─── Página principal ──────────────────────────────────────────────
 
 export default function PaginaBalcao() {
-  const [emprestimos, setEmprestimos] = useState<EmprestimoBalcao[]>([]);
+  const { emprestimos, devolverEmprestimo } = useBiblioteca();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [busca, setBusca] = useState("");
-  const [carregando, setCarregando] = useState<Record<string, boolean>>({});
-  const [carregandoDados, setCarregandoDados] = useState(true);
 
   // Modal Beneficiador
   const [modalBeneficiador, setModalBeneficiador] = useState(false);
   const [benefNome, setBenefNome] = useState("");
   const [benefCnpj, setBenefCnpj] = useState("");
   const [benefTelefone, setBenefTelefone] = useState("");
-  const [salvandoBenef, setSalvandoBenef] = useState(false);
 
-  // Buscar dados reais da API
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const dados = await listarEmprestimos();
-        const ativos = dados.filter((e: any) => e.status === "ATIVO");
-        const mapDados: EmprestimoBalcao[] = ativos.map((e: any) => ({
-          id: e.id,
-          nomeCliente: e.cliente?.nome || "Desconhecido",
-          tituloLivro: e.livro?.titulo || "Desconhecido",
-          dataPrevistaDevolucao: e.dataPrevistaDevolucao,
-          renovacoesRealizadas: e.renovacoesRealizadas || 0,
-        }));
-        setEmprestimos(mapDados);
-      } catch (err) {
-        console.error("Erro ao carregar empréstimos", err);
-      } finally {
-        setCarregandoDados(false);
-      }
-    }
-    carregar();
-  }, []);
+  // Filtra apenas empréstimos ativos (sem devolução)
+  const emprestimosAtivos = emprestimos.filter((e) => !e.dataDevolucao);
 
   // ─── Toast helpers ───────────────────────────────────────────────
 
@@ -157,84 +121,30 @@ export default function PaginaBalcao() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // ─── Ações do Balcão ────────────────────────────────────────────
+  // ─── Ações do Balcão (mock local) ────────────────────────────────
 
-  async function handleRenovar(emp: EmprestimoBalcao) {
-    const key = `renovar-${emp.id}`;
-    setCarregando((prev) => ({ ...prev, [key]: true }));
-    try {
-      await apiRenovar(emp.id);
-      // Atualiza localmente: incrementa renovações e estende prazo em 7 dias
-      setEmprestimos((prev) =>
-        prev.map((e) => {
-          if (e.id !== emp.id) return e;
-          const novaData = new Date(e.dataPrevistaDevolucao);
-          novaData.setDate(novaData.getDate() + 7);
-          return {
-            ...e,
-            renovacoesRealizadas: e.renovacoesRealizadas + 1,
-            dataPrevistaDevolucao: novaData.toISOString().split("T")[0],
-          };
-        })
-      );
-      adicionarToast(
-        "sucesso",
-        `Empréstimo #${emp.id} renovado com sucesso! Nova devolução prevista estendida.`
-      );
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Erro desconhecido ao renovar.";
-      adicionarToast("erro", mensagem);
-    } finally {
-      setCarregando((prev) => ({ ...prev, [key]: false }));
-    }
+  function handleDevolver(empId: number, nomeCliente: string, tituloLivro: string) {
+    devolverEmprestimo(empId);
+    adicionarToast(
+      "sucesso",
+      `Livro "${tituloLivro}" devolvido com sucesso por ${nomeCliente}.`
+    );
   }
 
-  async function handleDevolver(emp: EmprestimoBalcao) {
-    const key = `devolver-${emp.id}`;
-    setCarregando((prev) => ({ ...prev, [key]: true }));
-    try {
-      await apiDevolver(emp.id);
-      // Remove da lista de ativos
-      setEmprestimos((prev) => prev.filter((e) => e.id !== emp.id));
-      adicionarToast(
-        "sucesso",
-        `Livro "${emp.tituloLivro}" devolvido com sucesso por ${emp.nomeCliente}.`
-      );
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error ? err.message : "Erro desconhecido ao devolver.";
-      adicionarToast("erro", mensagem);
-    } finally {
-      setCarregando((prev) => ({ ...prev, [key]: false }));
-    }
-  }
+  // ─── Salvar Beneficiador (mock local) ────────────────────────────
 
-  // ─── Salvar Beneficiador ─────────────────────────────────────────
-
-  async function salvarBeneficiador() {
+  function salvarBeneficiador() {
     if (!benefNome.trim() || !benefCnpj.trim() || !benefTelefone.trim()) return;
-    setSalvandoBenef(true);
-    try {
-      await cadastrarBeneficiador({
-        nome: benefNome.trim(),
-        cnpj: benefCnpj.trim(),
-        telefone: benefTelefone.trim(),
-      });
-      adicionarToast("sucesso", `Beneficiador "${benefNome}" cadastrado com sucesso!`);
-      setBenefNome("");
-      setBenefCnpj("");
-      setBenefTelefone("");
-      setModalBeneficiador(false);
-    } catch (err: unknown) {
-      const mensagem =
-        err instanceof Error
-          ? err.message
-          : "Erro desconhecido ao cadastrar beneficiador.";
-      adicionarToast("erro", mensagem);
-    } finally {
-      setSalvandoBenef(false);
-    }
+    console.log("[MOCK] Beneficiador cadastrado:", {
+      nome: benefNome.trim(),
+      cnpj: benefCnpj.trim(),
+      telefone: benefTelefone.trim(),
+    });
+    adicionarToast("sucesso", `Beneficiador "${benefNome}" cadastrado com sucesso!`);
+    setBenefNome("");
+    setBenefCnpj("");
+    setBenefTelefone("");
+    setModalBeneficiador(false);
   }
 
   // ─── Helpers de visualização ─────────────────────────────────────
@@ -243,16 +153,16 @@ export default function PaginaBalcao() {
     return new Date(dataPrevista) < new Date();
   }
 
-  const emprestimosFiltrados = emprestimos.filter((e) => {
+  const emprestimosFiltrados = emprestimosAtivos.filter((e) => {
     const termo = busca.toLowerCase();
     return (
-      e.nomeCliente.toLowerCase().includes(termo) ||
-      e.tituloLivro.toLowerCase().includes(termo) ||
+      e.cliente.nome.toLowerCase().includes(termo) ||
+      e.livro.titulo.toLowerCase().includes(termo) ||
       e.id.toString().includes(termo)
     );
   });
 
-  const totalAtrasados = emprestimos.filter((e) =>
+  const totalAtrasados = emprestimosAtivos.filter((e) =>
     estaAtrasado(e.dataPrevistaDevolucao)
   ).length;
 
@@ -274,7 +184,7 @@ export default function PaginaBalcao() {
               Balcão de Atendimento
             </h1>
             <p className="text-sm text-muted-foreground">
-              Gerencie renovações, devoluções e cadastre beneficiadores.
+              Gerencie devoluções e cadastre beneficiadores.
             </p>
           </div>
         </div>
@@ -348,17 +258,12 @@ export default function PaginaBalcao() {
                   disabled={
                     !benefNome.trim() ||
                     !benefCnpj.trim() ||
-                    !benefTelefone.trim() ||
-                    salvandoBenef
+                    !benefTelefone.trim()
                   }
                   className="gap-2"
                 >
-                  {salvandoBenef ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                  {salvandoBenef ? "Salvando..." : "Salvar Beneficiador"}
+                  <UserPlus className="h-4 w-4" />
+                  Salvar Beneficiador
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -371,7 +276,7 @@ export default function PaginaBalcao() {
         <div className="rounded-lg border border-border bg-muted/20 px-4 py-2">
           <span className="text-sm text-muted-foreground">Ativos: </span>
           <span className="font-semibold">
-            {emprestimos.length} empréstimos
+            {emprestimosAtivos.length} empréstimos
           </span>
         </div>
         <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2">
@@ -401,44 +306,27 @@ export default function PaginaBalcao() {
               <TableHead className="w-40 text-center font-semibold">
                 Devolução Prevista
               </TableHead>
-              <TableHead className="w-32 text-center font-semibold">
-                Renovações
-              </TableHead>
               <TableHead className="w-36 text-center font-semibold">
                 Status
               </TableHead>
-              <TableHead className="w-56 text-center font-semibold">
+              <TableHead className="w-36 text-center font-semibold">
                 Ações
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {carregandoDados ? (
+            {emprestimosFiltrados.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
-                  className="py-12 text-center text-muted-foreground"
-                >
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <RefreshCw className="h-6 w-6 animate-spin text-primary" />
-                    <span>Carregando empréstimos ativos...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : emprestimosFiltrados.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
+                  colSpan={6}
                   className="py-8 text-center text-muted-foreground"
                 >
-                  Nenhum empréstimo encontrado.
+                  Nenhum empréstimo ativo encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               emprestimosFiltrados.map((emp) => {
                 const atrasado = estaAtrasado(emp.dataPrevistaDevolucao);
-                const keyRenovar = `renovar-${emp.id}`;
-                const keyDevolver = `devolver-${emp.id}`;
 
                 return (
                   <TableRow
@@ -451,11 +339,11 @@ export default function PaginaBalcao() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{emp.tituloLivro}</span>
+                        <span className="font-medium">{emp.livro.titulo}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {emp.nomeCliente}
+                      {emp.cliente.nome}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1.5">
@@ -480,12 +368,6 @@ export default function PaginaBalcao() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="inline-flex items-center gap-1 font-mono text-sm">
-                        {emp.renovacoesRealizadas}
-                        <span className="text-muted-foreground/60">/3</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
                       {atrasado ? (
                         <Badge className="bg-red-500/15 text-red-400 hover:bg-red-500/25 border-red-500/20">
                           Em atraso
@@ -497,36 +379,17 @@ export default function PaginaBalcao() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRenovar(emp)}
-                          disabled={!!carregando[keyRenovar]}
-                          className="gap-1.5 text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300"
-                        >
-                          {carregando[keyRenovar] ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          )}
-                          Renovar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDevolver(emp)}
-                          disabled={!!carregando[keyDevolver]}
-                          className="gap-1.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
-                        >
-                          {carregando[keyDevolver] ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Undo2 className="h-3.5 w-3.5" />
-                          )}
-                          Devolver
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleDevolver(emp.id, emp.cliente.nome, emp.livro.titulo)
+                        }
+                        className="gap-1.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                        Devolver
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
