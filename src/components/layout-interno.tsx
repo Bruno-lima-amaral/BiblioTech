@@ -1,9 +1,9 @@
 "use client";
 
-// import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { BarraLateral } from "@/components/barra-lateral";
-// import { useBiblioteca } from "@/lib/biblioteca-contexto";
+import { useBiblioteca } from "@/lib/biblioteca-contexto";
 
 // Rotas que NÃO devem exibir a barra lateral (telas públicas)
 const rotasPublicas = ["/login", "/solicitar-acesso", "/cadastro-suporte", "/recuperar-senha"];
@@ -14,8 +14,8 @@ export default function LayoutInterno({
   children: React.ReactNode;
 }) {
   const caminhoAtual = usePathname();
-  // const router = useRouter();
-  // const { usuarioLogado } = useBiblioteca();
+  const router = useRouter();
+  const { usuarioLogado } = useBiblioteca();
 
   const ehRotaPublica = rotasPublicas.some((rota) =>
     caminhoAtual.startsWith(rota)

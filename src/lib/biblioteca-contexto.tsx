@@ -5,11 +5,16 @@ import React, {
   useContext,
   useState,
   useCallback,
-  useEffect,
 } from "react";
-import type { Livro, Cliente, Emprestimo, Ticket } from "@/lib/dados-mockados";
-
-const API_BASE = "https://projetogestaobibliotecabackend-production.up.railway.app/api";
+import type { Livro, Cliente, Emprestimo, Funcionario } from "@/lib/dados-mockados";
+import {
+  livrosMockados,
+  clientesMockados,
+  emprestimosMockados,
+  ticketsMockados,
+  funcionariosMockados,
+  type Ticket,
+} from "@/lib/dados-mockados";
 
 // ─── Tipo do Contexto ──────────────────────────────────────────────
 
@@ -18,8 +23,10 @@ interface BibliotecaContexto {
   clientes: Cliente[];
   emprestimos: Emprestimo[];
   tickets: Ticket[];
+  funcionarios: Funcionario[];
+  usuarioLogado: Funcionario | null;
   adicionarLivro: (livro: Omit<Livro, "id" | "disponivel">) => void;
-  editarLivro: (id: number, dados: Omit<Livro, "id" | "disponivel">) => void;
+  editarLivro: (id: number, dados: Partial<Livro>) => void;
   deletarLivro: (id: number) => void;
   adicionarCliente: (cliente: Omit<Cliente, "id">) => void;
   editarCliente: (id: number, dados: Omit<Cliente, "id">) => void;
@@ -31,6 +38,9 @@ interface BibliotecaContexto {
   atualizarStatusTicket: (id: number, novoStatus: string) => Promise<void>;
   responderTicket: (id: number, resposta: string) => Promise<void>;
   enviarRelatorioTickets: (emailDestino: string) => Promise<void>;
+  loginFuncionario: (email: string, senha: string) => boolean;
+  logoutFuncionario: () => void;
+  adicionarFuncionario: (funcionario: Omit<Funcionario, "id">) => void;
 }
 
 const Contexto = createContext<BibliotecaContexto | null>(null);
@@ -50,302 +60,195 @@ export function BibliotecaProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [livros, setLivros] = useState<Livro[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  // Estado inicializado diretamente com dados mockados (sem API)
+  const [livros, setLivros] = useState<Livro[]>(livrosMockados);
+  const [clientes, setClientes] = useState<Cliente[]>(clientesMockados);
+  const [emprestimos, setEmprestimos] = useState<Emprestimo[]>(emprestimosMockados);
+  const [tickets, setTickets] = useState<Ticket[]>(ticketsMockados);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>(funcionariosMockados);
+  const [usuarioLogado, setUsuarioLogado] = useState<Funcionario | null>(null);
 
-  // ─── Carregamento inicial via API ───────────────────────────────
-
-  useEffect(() => {
-    async function carregarDados() {
-      try {
-        const [resLivros, resClientes] = await Promise.all([
-          fetch(`${API_BASE}/livros`),
-          fetch(`${API_BASE}/clientes`),
-        ]);
-        if (resLivros.ok) setLivros(await resLivros.json());
-        if (resClientes.ok) setClientes(await resClientes.json());
-      } catch (erro) {
-        console.error("Erro ao carregar dados iniciais:", erro);
-      }
-
-      // Empréstimos — tenta carregar, mas o endpoint pode não existir ainda
-      try {
-        const resEmp = await fetch(`${API_BASE}/emprestimos`);
-        if (resEmp.ok) setEmprestimos(await resEmp.json());
-      } catch {
-        console.warn("Endpoint /api/emprestimos não disponível.");
-      }
-    }
-    carregarDados();
-  }, []);
-
-  // ─── Tickets ───────────────────────────────────────────────────
+  // ─── Tickets (mock local) ─────────────────────────────────────
 
   const carregarTickets = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/tickets`);
-      if (res.ok) setTickets(await res.json());
-    } catch (erro) {
-      console.error("Erro ao carregar tickets:", erro);
-    }
+    // Dados já carregados no estado inicial, mantemos por compatibilidade
+    setTickets((prev) => (prev.length > 0 ? prev : ticketsMockados));
   }, []);
-
-  useEffect(() => {
-    carregarTickets();
-  }, [carregarTickets]);
 
   const criarTicket = useCallback(
     async (dados: Omit<Ticket, "id" | "status" | "dataCriacao">) => {
-      try {
-        const res = await fetch(`${API_BASE}/tickets`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dados),
-        });
-        if (res.ok) {
-          const novoTicket: Ticket = await res.json();
-          setTickets((prev) => [...prev, novoTicket]);
-        }
-      } catch (erro) {
-        console.error("Erro ao criar ticket:", erro);
-      }
+      const novoTicket: Ticket = {
+        ...dados,
+        id: Date.now(),
+        status: "ABERTO",
+        dataCriacao: new Date().toISOString(),
+      };
+      setTickets((prev) => [...prev, novoTicket]);
     },
     []
   );
 
   const atualizarStatusTicket = useCallback(
     async (id: number, novoStatus: string) => {
-      try {
-        const res = await fetch(`${API_BASE}/tickets/${id}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(novoStatus),
-        });
-        if (res.ok) {
-          setTickets((prev) =>
-            prev.map((t) =>
-              t.id === id ? { ...t, status: novoStatus as Ticket["status"] } : t
-            )
-          );
-        }
-      } catch (erro) {
-        console.error("Erro ao atualizar status do ticket:", erro);
-      }
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, status: novoStatus as Ticket["status"] } : t
+        )
+      );
     },
     []
   );
 
   const responderTicket = useCallback(
     async (id: number, resposta: string) => {
-      try {
-        const res = await fetch(`${API_BASE}/tickets/${id}/resposta`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(resposta),
-        });
-        if (res.ok) {
-          // A API muda status para CONCLUIDO automaticamente ao responder
-          setTickets((prev) =>
-            prev.map((t) =>
-              t.id === id ? { ...t, resposta, status: "CONCLUIDO" } : t
-            )
-          );
-        }
-      } catch (erro) {
-        console.error("Erro ao responder ticket:", erro);
-      }
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, resposta, status: "CONCLUIDO" } : t
+        )
+      );
     },
     []
   );
 
   const enviarRelatorioTickets = useCallback(async (emailDestino: string) => {
-    const res = await fetch(`${API_BASE}/tickets/relatorio`, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: emailDestino,
-    });
-    if (!res.ok) throw new Error("Erro ao enviar relatório");
+    // Mock: simula envio exibindo dados no console
+    console.log(`[MOCK] Relatório de tickets enviado para: ${emailDestino}`);
   }, []);
 
-  // ─── Livros ────────────────────────────────────────────────────
+  // ─── Livros (CRUD local) ──────────────────────────────────────
 
   const adicionarLivro = useCallback(
-    async (dados: Omit<Livro, "id" | "disponivel">) => {
-      try {
-        const res = await fetch(`${API_BASE}/livros`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...dados, disponivel: true }),
-        });
-        if (res.ok) {
-          const livroCriado: Livro = await res.json();
-          setLivros((prev) => [...prev, livroCriado]);
-        }
-      } catch (erro) {
-        console.error("Erro ao adicionar livro:", erro);
-      }
+    (dados: Omit<Livro, "id" | "disponivel">) => {
+      const novoLivro: Livro = {
+        ...dados,
+        id: Date.now(),
+        disponivel: true,
+      };
+      setLivros((prev) => [...prev, novoLivro]);
     },
     []
   );
 
   const editarLivro = useCallback(
-    async (id: number, dados: Omit<Livro, "id" | "disponivel">) => {
-      try {
-        const livroAtual = livros.find((l) => l.id === id);
-        const res = await fetch(`${API_BASE}/livros/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...dados,
-            disponivel: livroAtual?.disponivel ?? true,
-          }),
-        });
-        if (res.ok) {
-          const livroAtualizado: Livro = await res.json();
-          setLivros((prev) =>
-            prev.map((l) => (l.id === livroAtualizado.id ? livroAtualizado : l))
-          );
-        }
-      } catch (erro) {
-        console.error("Erro ao editar livro:", erro);
-      }
+    (id: number, dados: Partial<Livro>) => {
+      setLivros((prev) =>
+        prev.map((l) => (l.id === id ? { ...l, ...dados } : l))
+      );
     },
-    [livros]
+    []
   );
 
-  const deletarLivro = useCallback(async (id: number) => {
-    try {
-      const res = await fetch(`${API_BASE}/livros/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setLivros((prev) => prev.filter((l) => l.id !== id));
-      }
-    } catch (erro) {
-      console.error("Erro ao deletar livro:", erro);
-    }
+  const deletarLivro = useCallback((id: number) => {
+    setLivros((prev) => prev.filter((l) => l.id !== id));
   }, []);
 
-  // ─── Clientes ──────────────────────────────────────────────────
+  // ─── Clientes (CRUD local) ────────────────────────────────────
 
   const adicionarCliente = useCallback(
-    async (dados: Omit<Cliente, "id">) => {
-      try {
-        const res = await fetch(`${API_BASE}/clientes`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dados),
-        });
-        if (res.ok) {
-          const clienteCriado: Cliente = await res.json();
-          setClientes((prev) => [...prev, clienteCriado]);
-        }
-      } catch (erro) {
-        console.error("Erro ao adicionar cliente:", erro);
-      }
+    (dados: Omit<Cliente, "id">) => {
+      const novoCliente: Cliente = {
+        ...dados,
+        id: Date.now(),
+      };
+      setClientes((prev) => [...prev, novoCliente]);
     },
     []
   );
 
   const editarCliente = useCallback(
-    async (id: number, dados: Omit<Cliente, "id">) => {
-      try {
-        const res = await fetch(`${API_BASE}/clientes/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dados),
-        });
-        if (res.ok) {
-          const clienteAtualizado: Cliente = await res.json();
-          setClientes((prev) =>
-            prev.map((c) =>
-              c.id === clienteAtualizado.id ? clienteAtualizado : c
-            )
-          );
-        }
-      } catch (erro) {
-        console.error("Erro ao editar cliente:", erro);
-      }
+    (id: number, dados: Omit<Cliente, "id">) => {
+      setClientes((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...dados } : c))
+      );
     },
     []
   );
 
-  const deletarCliente = useCallback(async (id: number) => {
-    try {
-      const res = await fetch(`${API_BASE}/clientes/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setClientes((prev) => prev.filter((c) => c.id !== id));
-      }
-    } catch (erro) {
-      console.error("Erro ao deletar cliente:", erro);
-    }
+  const deletarCliente = useCallback((id: number) => {
+    setClientes((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  // ─── Empréstimos ───────────────────────────────────────────────
+  // ─── Empréstimos (CRUD local) ─────────────────────────────────
 
   const criarEmprestimo = useCallback(
-    async (livroId: number, clienteId: number) => {
-      try {
-        console.log("[criarEmprestimo] Enviando:", { livroId, clienteId });
-        const res = await fetch(`${API_BASE}/emprestimos`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ livroId, clienteId }),
-        });
-        if (res.ok) {
-          const novoEmprestimo: Emprestimo = await res.json();
-          console.log("[criarEmprestimo] Sucesso:", novoEmprestimo);
-          setEmprestimos((prev) => [...prev, novoEmprestimo]);
-          // Atualiza disponibilidade do livro localmente
-          setLivros((prev) =>
-            prev.map((l) =>
-              l.id === livroId ? { ...l, disponivel: false } : l
+    (livroId: number, clienteId: number) => {
+      const livro = livros.find((l) => l.id === livroId);
+      const cliente = clientes.find((c) => c.id === clienteId);
+      if (!livro || !cliente) return;
+
+      const hoje = new Date();
+      const devolucaoPrevista = new Date(hoje);
+      devolucaoPrevista.setDate(devolucaoPrevista.getDate() + 7);
+
+      const novoEmprestimo: Emprestimo = {
+        id: Date.now(),
+        dataEmprestimo: hoje.toISOString().split("T")[0],
+        dataPrevistaDevolucao: devolucaoPrevista.toISOString().split("T")[0],
+        dataDevolucao: null,
+        livro,
+        cliente,
+      };
+
+      setEmprestimos((prev) => [...prev, novoEmprestimo]);
+      // Marca o livro como indisponível
+      setLivros((prev) =>
+        prev.map((l) =>
+          l.id === livroId ? { ...l, disponivel: false } : l
+        )
+      );
+    },
+    [livros, clientes]
+  );
+
+  const devolverEmprestimo = useCallback((emprestimoId: number) => {
+    const hoje = new Date().toISOString().split("T")[0];
+    setEmprestimos((prev) =>
+      prev.map((e) => {
+        if (e.id === emprestimoId) {
+          // Marca o livro como disponível novamente
+          setLivros((prevLivros) =>
+            prevLivros.map((l) =>
+              l.id === e.livro.id ? { ...l, disponivel: true } : l
             )
           );
-        } else {
-          const textoErro = await res.text();
-          console.error("[criarEmprestimo] Erro HTTP:", res.status, textoErro);
+          return { ...e, dataDevolucao: hoje };
         }
-      } catch (erro) {
-        console.error("[criarEmprestimo] Erro de rede/fetch:", erro);
+        return e;
+      })
+    );
+  }, []);
+
+  // ─── Funcionários / Autenticação (mock local) ─────────────────
+
+  const loginFuncionario = useCallback(
+    (email: string, senha: string): boolean => {
+      const encontrado = funcionarios.find(
+        (f) => f.email === email && f.senha === senha && f.ativo
+      );
+      if (encontrado) {
+        setUsuarioLogado(encontrado);
+        return true;
       }
+      return false;
+    },
+    [funcionarios]
+  );
+
+  const logoutFuncionario = useCallback(() => {
+    setUsuarioLogado(null);
+  }, []);
+
+  const adicionarFuncionario = useCallback(
+    (dados: Omit<Funcionario, "id">) => {
+      const novo: Funcionario = {
+        ...dados,
+        id: Date.now(),
+      };
+      setFuncionarios((prev) => [...prev, novo]);
+      console.log("[MOCK] Funcionário cadastrado:", novo);
     },
     []
   );
-
-  const devolverEmprestimo = useCallback(async (emprestimoId: number) => {
-    try {
-      console.log("[devolverEmprestimo] Devolvendo ID:", emprestimoId);
-      const res = await fetch(
-        `${API_BASE}/emprestimos/${emprestimoId}/devolver`,
-        { method: "PUT" }
-      );
-      if (res.ok) {
-        const empDevolvido: Emprestimo = await res.json();
-        console.log("[devolverEmprestimo] Sucesso:", empDevolvido);
-        setEmprestimos((prev) =>
-          prev.map((e) => (e.id === emprestimoId ? empDevolvido : e))
-        );
-        // Atualiza disponibilidade do livro localmente
-        if (empDevolvido.livro) {
-          setLivros((prev) =>
-            prev.map((l) =>
-              l.id === empDevolvido.livro.id ? { ...l, disponivel: true } : l
-            )
-          );
-        }
-      } else {
-        const textoErro = await res.text();
-        console.error("[devolverEmprestimo] Erro HTTP:", res.status, textoErro);
-      }
-    } catch (erro) {
-      console.error("[devolverEmprestimo] Erro de rede/fetch:", erro);
-    }
-  }, []);
 
   return (
     <Contexto.Provider
@@ -367,6 +270,11 @@ export function BibliotecaProvider({
         atualizarStatusTicket,
         responderTicket,
         enviarRelatorioTickets,
+        funcionarios,
+        usuarioLogado,
+        loginFuncionario,
+        logoutFuncionario,
+        adicionarFuncionario,
       }}
     >
       {children}

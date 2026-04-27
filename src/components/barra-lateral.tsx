@@ -34,8 +34,8 @@ const ConteudoLateral = ({ caminhoAtual, aoClicarLink }: { caminhoAtual: string;
         <Library className="h-5 w-5" />
       </div>
       <div>
-        <h1 className="text-lg font-bold tracking-tight">BiblioTech</h1>
-        <p className="text-[11px] leading-none text-muted-foreground">
+        <h1 className="text-lg font-bold tracking-tight text-sidebar-foreground">BiblioTech</h1>
+        <p className="text-[11px] leading-none text-sidebar-foreground/60">
           Sistema de Biblioteca
         </p>
       </div>
@@ -43,7 +43,7 @@ const ConteudoLateral = ({ caminhoAtual, aoClicarLink }: { caminhoAtual: string;
 
     {/* Navegação */}
     <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-      <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+      <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-widest text-sidebar-foreground/60">
         Menu principal
       </p>
       {itensNavegacao.map((item) => {
@@ -61,7 +61,7 @@ const ConteudoLateral = ({ caminhoAtual, aoClicarLink }: { caminhoAtual: string;
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
               estaAtivo
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                : "text-sidebar-foreground/70 hover:bg-accent hover:text-accent-foreground"
             )}
           >
             <Icone className="h-4 w-4" />
@@ -74,10 +74,10 @@ const ConteudoLateral = ({ caminhoAtual, aoClicarLink }: { caminhoAtual: string;
     {/* Rodapé */}
     <div className="border-t border-border p-4 mt-auto flex-shrink-0">
       <div className="rounded-lg bg-muted/50 p-3">
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className="text-xs font-medium text-sidebar-foreground/70">
           Projeto POO — 2026
         </p>
-        <p className="text-[11px] text-muted-foreground/70">
+        <p className="text-[11px] text-sidebar-foreground/50">
           Interface estática v1.0
         </p>
       </div>
@@ -156,7 +156,7 @@ export function BarraLateral() {
       </header>
 
       {/* BARRA LATERAL DESKTOP */}
-      <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-64 flex-col border-r border-border bg-card">
+      <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar">
         <ConteudoLateral caminhoAtual={caminhoAtual} />
       </aside>
     </>

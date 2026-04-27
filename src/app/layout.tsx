@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { BarraLateral } from "@/components/barra-lateral";
 import { BibliotecaProvider } from "@/lib/biblioteca-contexto";
+import LayoutInterno from "@/components/layout-interno";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,8 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         <BibliotecaProvider>
-          <BarraLateral />
-          <main className="flex-1 w-full md:w-auto md:ml-64 min-h-screen p-4 md:p-8">{children}</main>
+          <LayoutInterno>{children}</LayoutInterno>
         </BibliotecaProvider>
       </body>
     </html>

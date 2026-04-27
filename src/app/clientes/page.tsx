@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, Mail, Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Users, Mail, Search, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,13 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useBiblioteca } from "@/lib/biblioteca-contexto";
+import { calcularIdade } from "@/lib/dados-mockados";
 import type { Cliente } from "@/lib/dados-mockados";
-
-const API_URL = "https://projetogestaobibliotecabackend-production.up.railway.app/api/clientes";
-
+import { exportarClientes } from "@/lib/exportar-excel";
 
 export default function PaginaClientes() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const { clientes, adicionarCliente, editarCliente, deletarCliente } = useBiblioteca();
   const [busca, setBusca] = useState("");
 
   // Modal de Criar
@@ -37,6 +37,8 @@ export default function PaginaClientes() {
   const [novoEmail, setNovoEmail] = useState("");
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
+  const [novoNascimento, setNovoNascimento] = useState("");
+  const [novoSexo, setNovoSexo] = useState<"M" | "F">("M");
 
   // Modal de Editar
   const [modalEditar, setModalEditar] = useState(false);
@@ -45,20 +47,8 @@ export default function PaginaClientes() {
   const [editEmail, setEditEmail] = useState("");
   const [editCpf, setEditCpf] = useState("");
   const [editTelefone, setEditTelefone] = useState("");
-
-  // ─── GET — Carregar clientes ao montar ───────────────────────────
-  useEffect(() => {
-    async function carregarClientes() {
-      try {
-        const res = await fetch(API_URL);
-        const dados: Cliente[] = await res.json();
-        setClientes(dados);
-      } catch (erro) {
-        console.error("Erro ao carregar clientes:", erro);
-      }
-    }
-    carregarClientes();
-  }, []);
+  const [editNascimento, setEditNascimento] = useState("");
+  const [editSexo, setEditSexo] = useState<"M" | "F">("M");
 
   const clientesFiltrados = clientes.filter((cliente) => {
     const termo = busca.toLowerCase();
@@ -68,80 +58,55 @@ export default function PaginaClientes() {
     );
   });
 
-  // ─── POST — Cadastrar novo cliente ───────────────────────────────
-  async function salvarCliente() {
-    if (!novoNome.trim() || !novoEmail.trim() || !novoCpf.trim() || !novoTelefone.trim()) return;
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome: novoNome.trim(),
-          email: novoEmail.trim(),
-          cpf: novoCpf.trim(),
-          telefone: novoTelefone.trim(),
-        }),
-      });
-      if (res.ok) {
-        const clienteCriado: Cliente = await res.json();
-        setClientes((prev) => [...prev, clienteCriado]);
-        setNovoNome("");
-        setNovoEmail("");
-        setNovoCpf("");
-        setNovoTelefone("");
-        setModalCriar(false);
-      }
-    } catch (erro) {
-      console.error("Erro ao cadastrar cliente:", erro);
-    }
+  // ─── Cadastrar novo cliente (mock local) ────────────────────────
+  function salvarCliente() {
+    if (!novoNome.trim() || !novoEmail.trim() || !novoCpf.trim() || !novoTelefone.trim() || !novoNascimento) return;
+    adicionarCliente({
+      nome: novoNome.trim(),
+      email: novoEmail.trim(),
+      cpf: novoCpf.trim(),
+      telefone: novoTelefone.trim(),
+      data_nascimento: novoNascimento,
+      sexo: novoSexo,
+    });
+    setNovoNome("");
+    setNovoEmail("");
+    setNovoCpf("");
+    setNovoTelefone("");
+    setNovoNascimento("");
+    setNovoSexo("M");
+    setModalCriar(false);
   }
 
-  // ─── DELETE — Remover cliente ────────────────────────────────────
-  async function deletarCliente(id: number) {
-    try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setClientes((prev) => prev.filter((c) => c.id !== id));
-      }
-    } catch (erro) {
-      console.error("Erro ao deletar cliente:", erro);
-    }
+  // ─── Remover cliente (mock local) ───────────────────────────────
+  function removerCliente(id: number) {
+    deletarCliente(id);
   }
 
-  // ─── PUT — Editar cliente ────────────────────────────────────────
+  // ─── Editar cliente (mock local) ────────────────────────────────
   function abrirEdicao(cliente: Cliente) {
     setClienteEditando(cliente);
     setEditNome(cliente.nome);
     setEditEmail(cliente.email);
     setEditCpf(cliente.cpf || "");
     setEditTelefone(cliente.telefone || "");
+    setEditNascimento(cliente.data_nascimento || "");
+    setEditSexo(cliente.sexo || "M");
     setModalEditar(true);
   }
 
-  async function salvarEdicao() {
-    if (!clienteEditando || !editNome.trim() || !editEmail.trim() || !editCpf.trim() || !editTelefone.trim()) return;
-    try {
-      const res = await fetch(`${API_URL}/${clienteEditando.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nome: editNome.trim(),
-          email: editEmail.trim(),
-          cpf: editCpf.trim(),
-          telefone: editTelefone.trim(),
-        }),
-      });
-      if (res.ok) {
-        const clienteAtualizado: Cliente = await res.json();
-        setClientes((prev) =>
-          prev.map((c) => (c.id === clienteAtualizado.id ? clienteAtualizado : c))
-        );
-        setModalEditar(false);
-        setClienteEditando(null);
-      }
-    } catch (erro) {
-      console.error("Erro ao editar cliente:", erro);
-    }
+  function salvarEdicao() {
+    if (!clienteEditando || !editNome.trim() || !editEmail.trim() || !editCpf.trim() || !editTelefone.trim() || !editNascimento) return;
+    editarCliente(clienteEditando.id, {
+      nome: editNome.trim(),
+      email: editEmail.trim(),
+      cpf: editCpf.trim(),
+      telefone: editTelefone.trim(),
+      data_nascimento: editNascimento,
+      sexo: editSexo,
+    });
+    setModalEditar(false);
+    setClienteEditando(null);
   }
 
   return (
@@ -172,6 +137,16 @@ export default function PaginaClientes() {
               className="h-10 w-full sm:w-64 rounded-lg border border-border bg-muted/30 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
+          {/* Botão Exportar Excel */}
+          <Button
+            variant="outline"
+            className="gap-2 w-full sm:w-auto border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+            onClick={() => exportarClientes(clientes)}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar Excel
+          </Button>
 
           {/* Botão Novo Cliente */}
           <Dialog open={modalCriar} onOpenChange={setModalCriar}>
@@ -207,6 +182,22 @@ export default function PaginaClientes() {
                   <Label htmlFor="telefone">Telefone</Label>
                   <Input id="telefone" placeholder="(11) 90000-0000" value={novoTelefone} onChange={(e) => setNovoTelefone(e.target.value)} />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="nascimento">Data de Nascimento</Label>
+                  <Input id="nascimento" type="date" value={novoNascimento} onChange={(e) => setNovoNascimento(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="sexo">Sexo</Label>
+                  <select
+                    id="sexo"
+                    value={novoSexo}
+                    onChange={(e) => setNovoSexo(e.target.value as "M" | "F")}
+                    className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring dark:bg-input/30"
+                  >
+                    <option value="M" className="bg-popover text-popover-foreground">Masculino</option>
+                    <option value="F" className="bg-popover text-popover-foreground">Feminino</option>
+                  </select>
+                </div>
               </div>
               <DialogFooter>
                 <Button onClick={salvarCliente} className="gap-2">
@@ -237,13 +228,15 @@ export default function PaginaClientes() {
               <TableHead className="font-semibold">E-mail</TableHead>
               <TableHead className="font-semibold">CPF</TableHead>
               <TableHead className="font-semibold">Telefone</TableHead>
+              <TableHead className="w-20 text-center font-semibold">Idade</TableHead>
+              <TableHead className="w-20 text-center font-semibold">Sexo</TableHead>
               <TableHead className="w-28 text-center font-semibold">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clientesFiltrados.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                   Nenhum cliente encontrado para &quot;{busca}&quot;.
                 </TableCell>
               </TableRow>
@@ -263,6 +256,20 @@ export default function PaginaClientes() {
                   <TableCell className="text-muted-foreground">{cliente.cpf}</TableCell>
                   <TableCell className="text-muted-foreground">{cliente.telefone}</TableCell>
                   <TableCell className="text-center">
+                    <span className="inline-flex items-center justify-center rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
+                      {calcularIdade(cliente.data_nascimento)} anos
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-medium border ${
+                      cliente.sexo === "F"
+                        ? "bg-pink-500/10 border-pink-500/20 text-pink-400"
+                        : "bg-sky-500/10 border-sky-500/20 text-sky-400"
+                    }`}>
+                      {cliente.sexo === "F" ? "Feminino" : "Masculino"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
@@ -276,7 +283,7 @@ export default function PaginaClientes() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => deletarCliente(cliente.id)}
+                        onClick={() => removerCliente(cliente.id)}
                         className="h-8 w-8 text-muted-foreground hover:text-red-400"
                         title="Deletar cliente"
                       >
@@ -316,6 +323,22 @@ export default function PaginaClientes() {
             <div className="grid gap-2">
               <Label htmlFor="edit-telefone">Telefone</Label>
               <Input id="edit-telefone" value={editTelefone} onChange={(e) => setEditTelefone(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-nascimento">Data de Nascimento</Label>
+              <Input id="edit-nascimento" type="date" value={editNascimento} onChange={(e) => setEditNascimento(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-sexo">Sexo</Label>
+              <select
+                id="edit-sexo"
+                value={editSexo}
+                onChange={(e) => setEditSexo(e.target.value as "M" | "F")}
+                className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring dark:bg-input/30"
+              >
+                <option value="M" className="bg-popover text-popover-foreground">Masculino</option>
+                <option value="F" className="bg-popover text-popover-foreground">Feminino</option>
+              </select>
             </div>
           </div>
           <DialogFooter>
