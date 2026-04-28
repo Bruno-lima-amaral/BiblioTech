@@ -18,13 +18,11 @@ export function TemaProvider({ children }: { children: React.ReactNode }) {
   const [tema, setTema] = useState<Tema>("light");
   const [montado, setMontado] = useState(false);
 
-  // Ler preferência salva ou do sistema ao montar
+  // Ler preferência salva ao montar (padrão: claro)
   useEffect(() => {
     const salvo = localStorage.getItem("bibliotech-tema") as Tema | null;
     if (salvo === "dark" || salvo === "light") {
       setTema(salvo);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTema("dark");
     }
     setMontado(true);
   }, []);
