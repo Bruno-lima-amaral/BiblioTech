@@ -72,13 +72,13 @@
   --chart-4: oklch(44% 0.2 265);
   --chart-5: oklch(48% 0.19 260);
   --radius: 0.625rem;
-  --sidebar: oklch(0% 0 0);
+  --sidebar: oklch(30% 0.14 265);
   --sidebar-foreground: oklch(95% 0.005 255);
   --sidebar-primary: oklch(52% 0.22 265);
   --sidebar-primary-foreground: oklch(100% 0 0);
-  --sidebar-accent: oklch(38% 0.17 265);
+  --sidebar-accent: oklch(35% 0.16 265);
   --sidebar-accent-foreground: oklch(100% 0 0);
-  --sidebar-border: oklch(27% 0.13 265);
+  --sidebar-border: oklch(35% 0.14 265);
   --sidebar-ring: oklch(52% 0.2 265);
 }
 
