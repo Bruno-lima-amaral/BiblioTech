@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BotaoTema } from "@/components/botao-tema";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 const itensNavegacao = [
@@ -142,6 +143,9 @@ export function BarraLateral() {
           <span className="text-lg font-bold tracking-tight">BiblioTech</span>
         </div>
 
+        <div className="flex items-center gap-1">
+          <BotaoTema />
+
         <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
             <Menu className="h-5 w-5" />
@@ -153,6 +157,7 @@ export function BarraLateral() {
             <ConteudoLateral caminhoAtual={caminhoAtual} aoClicarLink={() => setMenuAberto(false)} />
           </SheetContent>
         </Sheet>
+        </div>
       </header>
 
       {/* BARRA LATERAL DESKTOP */}

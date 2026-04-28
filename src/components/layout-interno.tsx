@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BarraLateral } from "@/components/barra-lateral";
+import { BotaoTema } from "@/components/botao-tema";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 
 // Rotas que NÃO devem exibir a barra lateral (telas públicas)
@@ -43,9 +44,16 @@ export default function LayoutInterno({
   return (
     <>
       <BarraLateral />
-      <main className="flex-1 w-full md:w-auto md:ml-64 min-h-screen p-4 md:p-8">
-        {children}
+      <main className="flex-1 w-full md:w-auto md:ml-64 min-h-screen">
+        {/* Barra superior desktop com botão de tema */}
+        <div className="hidden md:flex items-center justify-end h-14 px-6 border-b border-border bg-card sticky top-0 z-30">
+          <BotaoTema />
+        </div>
+        <div className="p-4 md:p-8">
+          {children}
+        </div>
       </main>
     </>
   );
 }
+

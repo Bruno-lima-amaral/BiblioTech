@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BibliotecaProvider } from "@/lib/biblioteca-contexto";
+import { TemaProvider } from "@/lib/tema-contexto";
 import LayoutInterno from "@/components/layout-interno";
 import "./globals.css";
 
@@ -28,12 +29,15 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full bg-background text-foreground">
-        <BibliotecaProvider>
-          <LayoutInterno>{children}</LayoutInterno>
-        </BibliotecaProvider>
+        <TemaProvider>
+          <BibliotecaProvider>
+            <LayoutInterno>{children}</LayoutInterno>
+          </BibliotecaProvider>
+        </TemaProvider>
       </body>
     </html>
   );
