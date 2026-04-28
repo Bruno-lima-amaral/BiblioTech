@@ -147,7 +147,7 @@ export function BarraLateral() {
             <Menu className="h-5 w-5" />
             <span className="sr-only">Abrir menu</span>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 flex flex-col">
+          <SheetContent side="left" className="w-64 p-0 flex flex-col bg-sidebar border-sidebar-border">
             <SheetTitle className="sr-only">Menu de Navegação</SheetTitle>
             <SheetDescription className="sr-only">Navegue pelas páginas do sistema.</SheetDescription>
             <ConteudoLateral caminhoAtual={caminhoAtual} aoClicarLink={() => setMenuAberto(false)} />
