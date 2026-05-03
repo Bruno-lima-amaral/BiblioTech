@@ -189,11 +189,23 @@ export const ticketsAPI = {
   criar: (dados: Record<string, unknown>) =>
     fetchAPI("/api/tickets", { method: "POST", body: JSON.stringify(dados) }),
   atualizarStatus: (id: number, status: string) =>
-    fetchAPI(`/api/tickets/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+    fetchAPI(`/api/tickets/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "text/plain" },
+      body: status,
+    }),
   responder: (id: number, resposta: string) =>
-    fetchAPI(`/api/tickets/${id}/resposta`, { method: "PATCH", body: JSON.stringify({ resposta }) }),
+    fetchAPI(`/api/tickets/${id}/resposta`, {
+      method: "PATCH",
+      headers: { "Content-Type": "text/plain" },
+      body: resposta,
+    }),
   enviarRelatorio: (emailDestino: string) =>
-    fetchAPI("/api/tickets/relatorio", { method: "POST", body: JSON.stringify({ emailDestino }) }),
+    fetchAPI("/api/tickets/relatorio", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: emailDestino,
+    }),
 };
 
 // ─── Funcionários API ───────────────────────────────────────────────

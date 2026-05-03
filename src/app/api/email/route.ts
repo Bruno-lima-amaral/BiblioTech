@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // URL base do Frontend — usa variável de ambiente ou o origin do request como fallback
+    const frontendUrl =
+      process.env.NEXT_PUBLIC_FRONTEND_URL ||
+      request.nextUrl.origin;
+
     // ─── E-mail de Redefinição de Senha ───────────────────────────
     if (tipo === "redefinicao-senha") {
-      // Monta o link de redefinição com o token
-      const frontendUrl = process.env.NEXT_PUBLIC_API_URL
-        ? new URL(process.env.NEXT_PUBLIC_API_URL).origin.replace("8080", "3000")
-        : "http://localhost:3000";
-
       const linkRedefinicao = `${frontendUrl}/redefinir-senha?token=${token}`;
 
       const { data, error } = await resend.emails.send({
@@ -62,10 +62,6 @@ export async function POST(request: NextRequest) {
 
     // ─── E-mail de Aprovação de Cadastro ──────────────────────────
     if (tipo === "aprovacao-cadastro") {
-      const frontendUrl = process.env.NEXT_PUBLIC_API_URL
-        ? new URL(process.env.NEXT_PUBLIC_API_URL).origin.replace("8080", "3000")
-        : "http://localhost:3000";
-
       const linkAprovacao = `${frontendUrl}/cadastro-suporte?id=${idFuncionario}&nome=${encodeURIComponent(nome || "")}`;
 
       const { data, error } = await resend.emails.send({
