@@ -214,7 +214,7 @@ export default function PaginaInicial() {
     });
 
     emprestimos.forEach((e) => {
-      const idade = calcularIdade(e.cliente.data_nascimento);
+      const idade = calcularIdade(e.cliente.dataNascimento);
       const genero = e.livro.genero;
       if (!generosOrdenados.includes(genero)) return;
 

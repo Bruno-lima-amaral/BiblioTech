@@ -4,81 +4,78 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Library, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { useBiblioteca } from "@/lib/biblioteca-contexto";
+import { authAPI } from "@/services/api";
+import { useAuth } from "@/lib/auth-contexto";
 
-// Componente interno que usa useSearchParams
 function ConteudoCadastro() {
   const searchParams = useSearchParams();
-  const { adicionarFuncionario } = useBiblioteca();
+  const { usuario, podeGerenciarFuncionarios } = useAuth();
 
-  // Dados vindos da URL (gerados na tela de solicitação)
-  const token = searchParams.get("token") || "";
-  const usernameParam = searchParams.get("username") || "";
-  const emailParam = searchParams.get("email") || "";
+  const idParam = searchParams.get("id") || "";
   const nomeParam = searchParams.get("nome") || "";
-  const senhaParam = searchParams.get("senha") || "";
 
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [cargo, setCargo] = useState("");
-  const [username, setUsername] = useState("");
-  const [senha, setSenha] = useState("");
-  const [cadastrado, setCadastrado] = useState(false);
-  const [tokenValido, setTokenValido] = useState(true);
+  const [perfilSelecionado, setPerfilSelecionado] = useState("ATENDENTE");
+  const [aprovado, setAprovado] = useState(false);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      setTokenValido(false);
-      return;
-    }
-    setNome(decodeURIComponent(nomeParam));
-    setEmail(decodeURIComponent(emailParam));
-    setUsername(usernameParam);
-    setSenha(senhaParam);
-  }, [token, nomeParam, emailParam, usernameParam, senhaParam]);
+  // Verifica se é admin/suporte logado
+  const semPermissao = usuario && !podeGerenciarFuncionarios;
 
-  function handleCadastrar(e: React.FormEvent) {
-    e.preventDefault();
-    if (!nome.trim() || !email.trim() || !cargo.trim()) return;
-
-    adicionarFuncionario({
-      nome: nome.trim(),
-      username,
-      email: email.trim(),
-      senha,
-      cargo: cargo.trim(),
-      ativo: true,
-    });
-
-    setCadastrado(true);
-  }
-
-  // Token inválido
-  if (!tokenValido) {
+  if (!idParam) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md text-center space-y-4">
           <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-red-500/20 text-red-400">
             <ShieldCheck className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-bold">Acesso Restrito</h1>
+          <h1 className="text-2xl font-bold">Link Inválido</h1>
           <p className="text-sm text-muted-foreground">
-            Esta página só pode ser acessada através do link gerado na solicitação de acesso.
-            O token de cadastro não foi encontrado.
+            Esta página só pode ser acessada através do link de aprovação.
           </p>
           <Link
-            href="/login"
+            href="/"
             className="inline-block text-sm font-medium text-primary underline underline-offset-4 hover:opacity-80"
           >
-            ← Voltar ao Login
+            ← Ir para o Dashboard
           </Link>
         </div>
       </div>
     );
   }
 
-  // Cadastro concluído
-  if (cadastrado) {
+  if (semPermissao) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-bold">Acesso Restrito</h1>
+          <p className="text-sm text-muted-foreground">
+            Apenas administradores e suporte podem aprovar cadastros.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  async function handleAprovar(e: React.FormEvent) {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+
+    try {
+      await authAPI.aprovar(Number(idParam), perfilSelecionado);
+      setAprovado(true);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao aprovar cadastro.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  if (aprovado) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md text-center space-y-6">
@@ -87,129 +84,103 @@ function ConteudoCadastro() {
           </div>
           <h1 className="text-2xl font-bold">Conta Ativada!</h1>
           <p className="text-sm text-muted-foreground">
-            A conta de <span className="font-semibold text-foreground">{nome}</span> foi
-            criada com sucesso. O funcionário já pode acessar o sistema com suas credenciais.
+            A conta de{" "}
+            <span className="font-semibold text-foreground">
+              {decodeURIComponent(nomeParam)}
+            </span>{" "}
+            foi aprovada com o perfil{" "}
+            <span className="font-semibold text-primary">
+              {perfilSelecionado}
+            </span>.
+            O funcionário já pode acessar o sistema.
           </p>
-          <div className="rounded-lg bg-muted/30 border border-border p-4 text-left space-y-1">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Username:</span>{" "}
-              <span className="font-mono">{username}</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">E-mail:</span> {email}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium">Cargo:</span> {cargo}
-            </p>
-          </div>
           <Link
-            href="/login"
+            href="/"
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground hover:opacity-90 transition-all"
           >
-            Ir para o Login
+            Ir para o Dashboard
           </Link>
         </div>
       </div>
     );
   }
 
-  // Formulário de cadastro
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* Logo e título */}
         <div className="flex flex-col items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
             <Library className="h-7 w-7" />
           </div>
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">
-              Cadastro de Funcionário
+              Aprovar Cadastro
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Página restrita ao Suporte — ativação de conta
+              Defina o perfil de acesso e ative a conta
             </p>
           </div>
         </div>
 
-        {/* Formulário */}
         <form
-          onSubmit={handleCadastrar}
+          onSubmit={handleAprovar}
           className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-sm"
         >
-          {/* Campos readonly (dados da solicitação) */}
+          {/* Nome do solicitante */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Username</label>
-            <input
-              type="text"
-              value={username}
-              readOnly
-              className="h-10 w-full rounded-lg border border-border bg-muted/50 px-4 text-sm text-muted-foreground font-mono cursor-not-allowed"
-            />
+            <label className="text-sm font-medium">Funcionário</label>
+            <div className="rounded-lg bg-muted/30 border border-border px-4 py-2.5 text-sm text-foreground">
+              {decodeURIComponent(nomeParam) || `ID: ${idParam}`}
+            </div>
           </div>
 
+          {/* Seleção de perfil */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Senha gerada</label>
-            <input
-              type="text"
-              value={senha}
-              readOnly
-              className="h-10 w-full rounded-lg border border-border bg-muted/50 px-4 text-sm text-muted-foreground font-mono tracking-widest cursor-not-allowed"
-            />
-          </div>
-
-          <hr className="border-border" />
-
-          {/* Campos editáveis pelo suporte */}
-          <div className="space-y-2">
-            <label htmlFor="cadastro-nome" className="text-sm font-medium">
-              Nome completo
+            <label htmlFor="perfil" className="text-sm font-medium">
+              Perfil de Acesso
             </label>
-            <input
-              id="cadastro-nome"
-              type="text"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              required
-              className="h-10 w-full rounded-lg border border-border bg-muted/30 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <select
+              id="perfil"
+              value={perfilSelecionado}
+              onChange={(e) => setPerfilSelecionado(e.target.value)}
+              className="h-10 w-full rounded-lg border border-border bg-muted/30 px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="ATENDENTE">ATENDENTE — Acesso básico</option>
+              <option value="SUPORTE">SUPORTE — Acesso total</option>
+              <option value="ADMIN">ADMIN — Acesso total</option>
+            </select>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="cadastro-email" className="text-sm font-medium">
-              E-mail
-            </label>
-            <input
-              id="cadastro-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-10 w-full rounded-lg border border-border bg-muted/30 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+          {/* Descrição do perfil */}
+          <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+            <p className="text-xs text-blue-300 font-medium">Permissões do perfil:</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {perfilSelecionado === "ATENDENTE"
+                ? "Acervo, Clientes, Empréstimos, Balcão e criação de Tickets."
+                : "Acesso total ao sistema, incluindo gerenciamento de Funcionários e Tickets."}
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="cadastro-cargo" className="text-sm font-medium">
-              Cargo
-            </label>
-            <input
-              id="cadastro-cargo"
-              type="text"
-              placeholder="Ex: Bibliotecário, Atendente"
-              value={cargo}
-              onChange={(e) => setCargo(e.target.value)}
-              required
-              className="h-10 w-full rounded-lg border border-border bg-muted/30 px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          {/* Erro */}
+          {erro && (
+            <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+              {erro}
+            </div>
+          )}
 
           <button
             type="submit"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+            disabled={carregando}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 text-sm font-medium text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
           >
-            <ShieldCheck className="h-4 w-4" />
-            Ativar Conta
+            {carregando ? (
+              <span className="animate-pulse">Aprovando...</span>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4" />
+                Aprovar e Ativar Conta
+              </>
+            )}
           </button>
         </form>
       </div>
@@ -217,7 +188,6 @@ function ConteudoCadastro() {
   );
 }
 
-// Componente exportado com Suspense boundary (requerido pelo Next.js para useSearchParams)
 export default function PaginaCadastroSuporte() {
   return (
     <Suspense

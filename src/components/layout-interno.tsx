@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { BarraLateral } from "@/components/barra-lateral";
 import { BotaoTema } from "@/components/botao-tema";
-import { useBiblioteca } from "@/lib/biblioteca-contexto";
+import { useAuth } from "@/lib/auth-contexto";
 
 // Rotas que NÃO devem exibir a barra lateral (telas públicas)
-const rotasPublicas = ["/login", "/solicitar-acesso", "/cadastro-suporte", "/recuperar-senha"];
+const rotasPublicas = ["/login", "/solicitar-acesso", "/cadastro-suporte", "/recuperar-senha", "/redefinir-senha"];
 
 export default function LayoutInterno({
   children,
@@ -15,30 +14,31 @@ export default function LayoutInterno({
   children: React.ReactNode;
 }) {
   const caminhoAtual = usePathname();
-  const router = useRouter();
-  const { usuarioLogado } = useBiblioteca();
+  const { usuario, carregando } = useAuth();
 
   const ehRotaPublica = rotasPublicas.some((rota) =>
     caminhoAtual.startsWith(rota)
   );
-
-  // Desativado para que o login não seja a página padrão
-  // useEffect(() => {
-  //   if (!usuarioLogado && !ehRotaPublica) {
-  //     router.push("/login");
-  //   }
-  // }, [usuarioLogado, ehRotaPublica, router]);
 
   if (ehRotaPublica) {
     // Telas públicas: sem sidebar, conteúdo centralizado
     return <>{children}</>;
   }
 
-  // Enquanto verifica o redirecionamento, se não tiver usuário não renderiza a casca
-  // Comentado para permitir visualização sem login
-  // if (!usuarioLogado) {
-  //   return null; 
-  // }
+  // Enquanto carrega a sessão, mostra loading
+  if (carregando) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground animate-pulse">Carregando...</p>
+      </div>
+    );
+  }
+
+  // Se não está autenticado e não é rota pública, não renderiza
+  // (o AuthProvider já redireciona para /login)
+  if (!usuario) {
+    return null;
+  }
 
   // Telas internas: com sidebar + área principal
   return (
@@ -56,4 +56,3 @@ export default function LayoutInterno({
     </>
   );
 }
-

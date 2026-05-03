@@ -11,8 +11,8 @@ export function exportarClientes(clientes: Cliente[]) {
     "E-mail": c.email,
     CPF: c.cpf,
     Telefone: c.telefone,
-    "Data de Nascimento": c.data_nascimento,
-    Idade: calcularIdade(c.data_nascimento),
+    "Data de Nascimento": c.dataNascimento,
+    Idade: calcularIdade(c.dataNascimento),
     Sexo: c.sexo === "F" ? "Feminino" : "Masculino",
   }));
 
@@ -91,7 +91,7 @@ export function exportarDashboard(
     "E-mail": c.email,
     CPF: c.cpf,
     Telefone: c.telefone,
-    Idade: calcularIdade(c.data_nascimento),
+    Idade: calcularIdade(c.dataNascimento),
     Sexo: c.sexo === "F" ? "Feminino" : "Masculino",
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dadosClientes), "Clientes");

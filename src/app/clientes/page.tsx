@@ -66,7 +66,7 @@ export default function PaginaClientes() {
       email: novoEmail.trim(),
       cpf: novoCpf.trim(),
       telefone: novoTelefone.trim(),
-      data_nascimento: novoNascimento,
+      dataNascimento: novoNascimento,
       sexo: novoSexo,
     });
     setNovoNome("");
@@ -90,7 +90,7 @@ export default function PaginaClientes() {
     setEditEmail(cliente.email);
     setEditCpf(cliente.cpf || "");
     setEditTelefone(cliente.telefone || "");
-    setEditNascimento(cliente.data_nascimento || "");
+    setEditNascimento(cliente.dataNascimento || "");
     setEditSexo(cliente.sexo || "M");
     setModalEditar(true);
   }
@@ -102,7 +102,7 @@ export default function PaginaClientes() {
       email: editEmail.trim(),
       cpf: editCpf.trim(),
       telefone: editTelefone.trim(),
-      data_nascimento: editNascimento,
+      dataNascimento: editNascimento,
       sexo: editSexo,
     });
     setModalEditar(false);
@@ -257,7 +257,7 @@ export default function PaginaClientes() {
                   <TableCell className="text-muted-foreground">{cliente.telefone}</TableCell>
                   <TableCell className="text-center">
                     <span className="inline-flex items-center justify-center rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
-                      {calcularIdade(cliente.data_nascimento)} anos
+                      {calcularIdade(cliente.dataNascimento)} anos
                     </span>
                   </TableCell>
                   <TableCell className="text-center">

@@ -2,19 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Library, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Library, Mail, CreditCard, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { authAPI, emailAPI } from "@/services/api";
 
 export default function PaginaRecuperarSenha() {
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
 
-  function handleEnviar(e: React.FormEvent) {
+  async function handleEnviar(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
+    setErro("");
+    setCarregando(true);
 
-    // Mock: simula envio de e-mail de recuperação
-    console.log(`[MOCK] Link de recuperação enviado para: ${email}`);
-    setEnviado(true);
+    try {
+      // 1. Chama o backend para gerar o token de redefinição (15 min)
+      const resposta = await authAPI.esqueciSenha(email.trim(), cpf.trim());
+
+      // 2. Envia o e-mail via API Route do Resend com o token
+      await emailAPI.enviarRedefinicaoSenha(email.trim(), resposta.token, "");
+
+      setEnviado(true);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao processar solicitação.");
+    } finally {
+      setCarregando(false);
+    }
   }
 
   return (
@@ -30,7 +45,7 @@ export default function PaginaRecuperarSenha() {
               Recuperar Senha
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Informe seu e-mail cadastrado para receber o link de recuperação
+              Informe seu e-mail e CPF cadastrados para receber o link de redefinição
             </p>
           </div>
         </div>
@@ -44,19 +59,19 @@ export default function PaginaRecuperarSenha() {
               </div>
               <h2 className="text-lg font-semibold">E-mail Enviado!</h2>
               <p className="text-sm text-muted-foreground">
-                Se o e-mail <span className="font-medium text-foreground">{email}</span> estiver
-                cadastrado no sistema, um link de recuperação foi enviado para sua
-                caixa de entrada.
+                Se os dados de{" "}
+                <span className="font-medium text-foreground">{email}</span>{" "}
+                estiverem cadastrados no sistema, um link de redefinição foi
+                enviado para sua caixa de entrada.
               </p>
             </div>
 
-            {/* Aviso */}
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
               <p className="text-xs text-amber-400 font-medium">
-                ⚠️ Verifique também a caixa de spam.
+                Verifique também a caixa de spam.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                O link de recuperação expira em 24 horas.
+                O link de redefinição expira em <strong>15 minutos</strong>.
               </p>
             </div>
 
@@ -92,13 +107,46 @@ export default function PaginaRecuperarSenha() {
               </div>
             </div>
 
-            {/* Botão de envio */}
+            {/* Campo de CPF */}
+            <div className="space-y-2">
+              <label htmlFor="recuperar-cpf" className="text-sm font-medium">
+                CPF cadastrado
+              </label>
+              <div className="relative">
+                <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  id="recuperar-cpf"
+                  type="text"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  required
+                  className="h-10 w-full rounded-lg border border-border bg-muted/30 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            {/* Erro */}
+            {erro && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+                {erro}
+              </div>
+            )}
+
+            {/* Botão */}
             <button
               type="submit"
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-all hover:opacity-90"
+              disabled={carregando}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50"
             >
-              <Mail className="h-4 w-4" />
-              Enviar Link de Recuperação
+              {carregando ? (
+                <span className="animate-pulse">Enviando...</span>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Enviar Link de Recuperação
+                </>
+              )}
             </button>
           </form>
         )}

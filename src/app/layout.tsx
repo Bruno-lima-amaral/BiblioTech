@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BibliotecaProvider } from "@/lib/biblioteca-contexto";
 import { TemaProvider } from "@/lib/tema-contexto";
+import { AuthProvider } from "@/lib/auth-contexto";
 import LayoutInterno from "@/components/layout-interno";
 import "./globals.css";
 
@@ -34,9 +35,11 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         <TemaProvider>
-          <BibliotecaProvider>
-            <LayoutInterno>{children}</LayoutInterno>
-          </BibliotecaProvider>
+          <AuthProvider>
+            <BibliotecaProvider>
+              <LayoutInterno>{children}</LayoutInterno>
+            </BibliotecaProvider>
+          </AuthProvider>
         </TemaProvider>
       </body>
     </html>
