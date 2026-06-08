@@ -15,12 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // URL base do Frontend — usa variável de ambiente ou o origin do request como fallback
+    // URL base do Frontend
     const frontendUrl =
       process.env.NEXT_PUBLIC_FRONTEND_URL ||
       request.nextUrl.origin;
 
-    // ─── E-mail de Redefinição de Senha ───────────────────────────
+    // E-mail de Redefinição de Senha
     if (tipo === "redefinicao-senha") {
       const linkRedefinicao = `${frontendUrl}/redefinir-senha?token=${token}`;
 

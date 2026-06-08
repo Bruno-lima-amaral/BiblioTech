@@ -5,26 +5,24 @@ import Link from "next/link";
 import { BookOpen, Users, ClipboardList, TrendingUp, FileSpreadsheet } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
 import { calcularIdade } from "@/lib/dados-mockados";
-import { exportarDashboard } from "@/lib/exportar-excel";
+import { exportarDashboard, exportarEmprestimos } from "@/lib/exportar-excel";
 import { Button } from "@/components/ui/button";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
 } from "chart.js";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 
 // Registra os componentes do Chart.js necessários
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -43,6 +41,11 @@ export default function PaginaInicial() {
 
   // ─── Estado do filtro de gênero no gráfico de sexo ────────────────
   const [filtroGenero, setFiltroGenero] = useState("TODOS");
+
+  // ─── Estado dos filtros do Gráfico Master ─────────────────────────
+  const [filtroMasterIdade, setFiltroMasterIdade] = useState("TODAS");
+  const [filtroMasterGenero, setFiltroMasterGenero] = useState("TODOS");
+  const [filtroMasterSexo, setFiltroMasterSexo] = useState("TODOS");
 
   // ─── Cards de estatísticas ────────────────────────────────────────
   const estatisticas = [
@@ -153,47 +156,11 @@ export default function PaginaInicial() {
     };
   }, [emprestimos, filtroGenero]);
 
-  // ─── Cruzamento de dados: Gênero em Alta no Trimestre ─────────────
-  const { dadosTrimestre, generoEmAlta, totalEmAlta } = useMemo(() => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const inicioTrimestre = mesAtual - (mesAtual % 3);
-    const anoAtual = hoje.getFullYear();
-    const dataInicioTrimestre = new Date(anoAtual, inicioTrimestre, 1);
 
-    const empTrimestre = emprestimos.filter((e) => {
-      const dataEmp = new Date(e.dataEmprestimo);
-      return dataEmp >= dataInicioTrimestre;
-    });
-
-    const contagem: Record<string, number> = {};
-    empTrimestre.forEach((e) => {
-      const g = e.livro.genero;
-      contagem[g] = (contagem[g] || 0) + 1;
-    });
-
-    const generosTrimestre = Object.keys(contagem).sort();
-    const valores = generosTrimestre.map((g) => contagem[g]);
-
-    let generoEmAlta = "";
-    let totalEmAlta = 0;
-    generosTrimestre.forEach((g) => {
-      if (contagem[g] > totalEmAlta) {
-        totalEmAlta = contagem[g];
-        generoEmAlta = g;
-      }
-    });
-
-    return {
-      dadosTrimestre: { labels: generosTrimestre, dados: valores },
-      generoEmAlta,
-      totalEmAlta,
-    };
-  }, [emprestimos]);
 
   // ─── NOVO: Preferência de Gênero por Faixa Etária ────────────────
   const { dadosFaixaEtaria, generosTopFaixa } = useMemo(() => {
-    // Descobre os gêneros mais populares (top 4 para o gráfico não ficar poluído)
+    // Descobre todos os gêneros, ordenados por popularidade
     const contagemGeral: Record<string, number> = {};
     emprestimos.forEach((e) => {
       const g = e.livro.genero;
@@ -201,7 +168,6 @@ export default function PaginaInicial() {
     });
     const generosOrdenados = Object.entries(contagemGeral)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
       .map(([g]) => g);
 
     // Monta a contagem por faixa etária x gênero
@@ -229,6 +195,52 @@ export default function PaginaInicial() {
       generosTopFaixa: generosOrdenados,
     };
   }, [emprestimos]);
+
+  // ─── Cruzamento de dados: Gráfico Master ──────────────────────────
+  const { dadosGraficoMaster, emprestimosFiltradosMaster } = useMemo(() => {
+    const filtrados = emprestimos.filter((e) => {
+      // Filtro Sexo
+      if (filtroMasterSexo !== "TODOS" && e.cliente.sexo !== filtroMasterSexo) return false;
+      // Filtro Gênero
+      if (filtroMasterGenero !== "TODOS" && e.livro.genero !== filtroMasterGenero) return false;
+      // Filtro Idade
+      if (filtroMasterIdade !== "TODAS") {
+        const idade = calcularIdade(e.cliente.dataNascimento);
+        const faixa = FAIXAS_ETARIAS.find((f) => idade >= f.min && idade <= f.max);
+        if (!faixa || faixa.label !== filtroMasterIdade) return false;
+      }
+      return true;
+    });
+
+    // Se "Todos os Gêneros" estiver selecionado, agrupa por gênero. 
+    // Se um Gênero específico for selecionado, agrupa por Títulos dos livros.
+    const contagem: Record<string, number> = {};
+    const usarTitulos = filtroMasterGenero !== "TODOS";
+
+    filtrados.forEach((e) => {
+      const chave = usarTitulos ? e.livro.titulo : e.livro.genero;
+      contagem[chave] = (contagem[chave] || 0) + 1;
+    });
+
+    const labels = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a]); // Ordem decrescente
+    const data = labels.map((l) => contagem[l]);
+
+    const grafico = {
+      labels,
+      datasets: [
+        {
+          label: usarTitulos ? "Empréstimos por Livro" : "Empréstimos por Gênero",
+          data,
+          backgroundColor: "rgba(99, 102, 241, 0.6)", // indigo-500
+          borderColor: "rgba(99, 102, 241, 1)",
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
+    };
+
+    return { dadosGraficoMaster: grafico, emprestimosFiltradosMaster: filtrados };
+  }, [emprestimos, filtroMasterIdade, filtroMasterGenero, filtroMasterSexo]);
 
   // ─── Configuração dos gráficos ────────────────────────────────────
 
@@ -277,37 +289,7 @@ export default function PaginaInicial() {
     },
   };
 
-  const coresDoughnut = [
-    "rgba(139, 92, 246, 0.7)",
-    "rgba(56, 189, 248, 0.7)",
-    "rgba(244, 114, 182, 0.7)",
-    "rgba(52, 211, 153, 0.7)",
-    "rgba(251, 191, 36, 0.7)",
-    "rgba(248, 113, 113, 0.7)",
-  ];
 
-  const dadosGraficoTrimestre = {
-    labels: dadosTrimestre.labels,
-    datasets: [
-      {
-        data: dadosTrimestre.dados,
-        backgroundColor: coresDoughnut.slice(0, dadosTrimestre.labels.length),
-        borderColor: "rgba(0,0,0,0.3)",
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const opcoesGraficoTrimestre = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "right" as const,
-        labels: { color: "rgba(255,255,255,0.7)", font: { size: 12 }, padding: 16 },
-      },
-    },
-  };
 
   // ─── Gráfico de Faixa Etária ──────────────────────────────────────
 
@@ -316,6 +298,10 @@ export default function PaginaInicial() {
     "rgba(56, 189, 248, 0.65)",
     "rgba(244, 114, 182, 0.65)",
     "rgba(52, 211, 153, 0.65)",
+    "rgba(251, 191, 36, 0.65)",
+    "rgba(248, 113, 113, 0.65)",
+    "rgba(167, 139, 250, 0.65)",
+    "rgba(45, 212, 191, 0.65)",
   ];
 
   const dadosGraficoFaixaEtaria = {
@@ -416,47 +402,85 @@ export default function PaginaInicial() {
           </div>
         </div>
 
-        {/* Gênero em Alta no Trimestre */}
+        {/* Gênero do Livro × Faixa Etária */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Gênero em Alta no Trimestre</h2>
+            <h2 className="text-lg font-semibold">Gênero por Faixa Etária</h2>
             <p className="text-sm text-muted-foreground">
-              Volume de empréstimos por gênero literário no trimestre atual
+              Empréstimos por gênero literário, agrupados pela idade dos clientes
             </p>
           </div>
           <div className="h-64">
-            <Doughnut data={dadosGraficoTrimestre} options={opcoesGraficoTrimestre} />
+            <Bar data={dadosGraficoFaixaEtaria} options={opcoesGraficoBar} />
           </div>
-          {generoEmAlta && (
-            <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-4 py-3">
-              <p className="text-sm text-violet-300 font-medium">🔥 Destaque</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="font-semibold text-foreground">{generoEmAlta}</span> foi o gênero mais emprestado neste trimestre com{" "}
-                <span className="font-semibold text-foreground">{totalEmAlta}</span> aluguéis.
-              </p>
-            </div>
-          )}
+          <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-3">
+            <p className="text-sm text-sky-300 font-medium">📈 Análise</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Os gêneros mais populares são cruzados com a idade calculada de cada cliente.
+              Faixas: 18–25, 26–35, 36–50 e 50+.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ─── NOVO: Gráfico de Faixa Etária x Gênero ─────────────── */}
+      {/* ─── NOVO: Gráfico Master com Múltiplos Filtros ───────────── */}
       <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Preferência de Gênero por Faixa Etária</h2>
-          <p className="text-sm text-muted-foreground">
-            Volume de empréstimos dos gêneros mais populares, agrupados pela idade dos clientes
-          </p>
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight">Análise Avançada de Empréstimos</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Filtre por Idade, Gênero do Livro e Sexo para visualizar os dados cruzados
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+            {/* Filtro Idade */}
+            <select
+              value={filtroMasterIdade}
+              onChange={(e) => setFiltroMasterIdade(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-muted/30 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="TODAS" className="bg-popover text-popover-foreground">Todas as Idades</option>
+              {FAIXAS_ETARIAS.map((f) => (
+                <option key={f.label} value={f.label} className="bg-popover text-popover-foreground">{f.label}</option>
+              ))}
+            </select>
+            
+            {/* Filtro Gênero */}
+            <select
+              value={filtroMasterGenero}
+              onChange={(e) => setFiltroMasterGenero(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-muted/30 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="TODOS" className="bg-popover text-popover-foreground">Todos os Gêneros</option>
+              {generosUnicos.map((g) => (
+                <option key={g} value={g} className="bg-popover text-popover-foreground">{g}</option>
+              ))}
+            </select>
+            
+            {/* Filtro Sexo */}
+            <select
+              value={filtroMasterSexo}
+              onChange={(e) => setFiltroMasterSexo(e.target.value)}
+              className="h-9 rounded-lg border border-border bg-muted/30 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="TODOS" className="bg-popover text-popover-foreground">Ambos os Sexos</option>
+              <option value="M" className="bg-popover text-popover-foreground">Masculino</option>
+              <option value="F" className="bg-popover text-popover-foreground">Feminino</option>
+            </select>
+            
+            {/* Botão Exportar Excel deste gráfico */}
+            <Button
+              variant="outline"
+              onClick={() => exportarEmprestimos(emprestimosFiltradosMaster)}
+              className="h-9 gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Baixar Excel
+            </Button>
+          </div>
         </div>
-        <div className="h-72">
-          <Bar data={dadosGraficoFaixaEtaria} options={opcoesGraficoBar} />
-        </div>
-        <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-3">
-          <p className="text-sm text-sky-300 font-medium">📈 Análise</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Os gêneros mais populares são cruzados com a idade calculada de cada cliente via{" "}
-            <code className="text-xs bg-muted/50 px-1 rounded">calcularIdade()</code>.
-            Faixas: 18–25, 26–35, 36–50 e 50+.
-          </p>
+        <div className="h-80 mt-4">
+          <Bar data={dadosGraficoMaster} options={opcoesGraficoBar} />
         </div>
       </div>
 
