@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Users, ClipboardList, TrendingUp, FileSpreadsheet } from "lucide-react";
 import { useBiblioteca } from "@/lib/biblioteca-contexto";
+import { useTema } from "@/lib/tema-contexto";
 import { calcularIdade } from "@/lib/dados-mockados";
 import { exportarDashboard } from "@/lib/exportar-excel";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,12 @@ const FAIXAS_ETARIAS = [
 
 export default function PaginaInicial() {
   const { livros, clientes, emprestimos } = useBiblioteca();
+  const { tema } = useTema();
+  const isDark = tema === "dark";
+
+  // Cores adaptadas ao tema para Chart.js
+  const chartTextColor = isDark ? "rgba(255,255,255,0.75)" : "rgba(60,60,80,1)";
+  const chartGridColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
 
   // ─── Estado do filtro de gênero no gráfico de sexo ────────────────
   const [filtroGenero, setFiltroGenero] = useState("TODOS");
@@ -154,20 +161,25 @@ export default function PaginaInicial() {
   }, [emprestimos, filtroGenero]);
 
   // ─── Cruzamento de dados: Gênero em Alta no Trimestre ─────────────
+  // Usa os últimos 90 dias para garantir dados independente do trimestre atual
   const { dadosTrimestre, generoEmAlta, totalEmAlta } = useMemo(() => {
     const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const inicioTrimestre = mesAtual - (mesAtual % 3);
-    const anoAtual = hoje.getFullYear();
-    const dataInicioTrimestre = new Date(anoAtual, inicioTrimestre, 1);
+    const noventaDiasAtras = new Date(hoje);
+    noventaDiasAtras.setDate(hoje.getDate() - 90);
 
-    const empTrimestre = emprestimos.filter((e) => {
+    // Primeiro tenta filtrar pelos últimos 90 dias
+    let empPeriodo = emprestimos.filter((e) => {
       const dataEmp = new Date(e.dataEmprestimo);
-      return dataEmp >= dataInicioTrimestre;
+      return dataEmp >= noventaDiasAtras;
     });
 
+    // Se não houver dados recentes, usa todos os empréstimos (fallback)
+    if (empPeriodo.length === 0) {
+      empPeriodo = [...emprestimos];
+    }
+
     const contagem: Record<string, number> = {};
-    empTrimestre.forEach((e) => {
+    empPeriodo.forEach((e) => {
       const g = e.livro.genero;
       contagem[g] = (contagem[g] || 0) + 1;
     });
@@ -260,19 +272,19 @@ export default function PaginaInicial() {
     plugins: {
       legend: {
         position: "top" as const,
-        labels: { color: "rgba(255,255,255,0.7)", font: { size: 12 } },
+        labels: { color: chartTextColor, font: { size: 12 } },
       },
       title: { display: false },
     },
     scales: {
       x: {
-        ticks: { color: "rgba(255,255,255,0.5)", font: { size: 11 } },
-        grid: { color: "rgba(255,255,255,0.05)" },
+        ticks: { color: chartTextColor, font: { size: 11 } },
+        grid: { color: chartGridColor },
       },
       y: {
         beginAtZero: true,
-        ticks: { color: "rgba(255,255,255,0.5)", font: { size: 11 }, stepSize: 1 },
-        grid: { color: "rgba(255,255,255,0.05)" },
+        ticks: { color: chartTextColor, font: { size: 11 }, stepSize: 1 },
+        grid: { color: chartGridColor },
       },
     },
   };
@@ -304,7 +316,7 @@ export default function PaginaInicial() {
     plugins: {
       legend: {
         position: "right" as const,
-        labels: { color: "rgba(255,255,255,0.7)", font: { size: 12 }, padding: 16 },
+        labels: { color: chartTextColor, font: { size: 12 }, padding: 16 },
       },
     },
   };
